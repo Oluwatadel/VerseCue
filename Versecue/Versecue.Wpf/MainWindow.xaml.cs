@@ -9,20 +9,16 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Versecue.Wpf;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace Versecue.Wpf
 {
-    public MainWindow()
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
-    }
-
-    private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
     }
 }
