@@ -3,13 +3,17 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36705.20
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Domain", "Versecue.Domain\Versecue.Domain.csproj", "{E91E6174-E53D-4221-9E1C-5F9E4DE2A5DF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Domain", "src\Versecue.Domain\Versecue.Domain.csproj", "{E91E6174-E53D-4221-9E1C-5F9E4DE2A5DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Application", "Versecue.Application\Versecue.Application.csproj", "{24B0A3C7-D11A-4D24-97AF-4D8E20EBA541}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Application", "src\Versecue.Application\Versecue.Application.csproj", "{24B0A3C7-D11A-4D24-97AF-4D8E20EBA541}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Infrastructure", "Versecue.Infrastructure\Versecue.Infrastructure.csproj", "{B56E6701-821C-4956-B656-3643792C53DA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Infrastructure", "src\Versecue.Infrastructure\Versecue.Infrastructure.csproj", "{B56E6701-821C-4956-B656-3643792C53DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Wpf", "Versecue.Wpf\Versecue.Wpf.csproj", "{655CD9A9-7EAE-493E-BD93-7F640E0F3F57}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Versecue.Wpf", "src\Versecue.Wpf\Versecue.Wpf.csproj", "{655CD9A9-7EAE-493E-BD93-7F640E0F3F57}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2C89CFA0-5F47-45E6-8907-71E8D3B85833}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,6 +76,12 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E91E6174-E53D-4221-9E1C-5F9E4DE2A5DF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{24B0A3C7-D11A-4D24-97AF-4D8E20EBA541} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{B56E6701-821C-4956-B656-3643792C53DA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{655CD9A9-7EAE-493E-BD93-7F640E0F3F57} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0432DD32-6231-485E-9965-6DBF9CF2A907}
