@@ -1,29 +1,19 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Versecue.Application.Interfaces;
 
-public class TranscriptReceivedEventArgs : EventArgs
+public sealed record LlmResolutionResult(
+    bool IsSuccess,
+    string? BookName,
+    int? ChapterNumber,
+    int? VerseStart,
+    int? VerseEnd,
+    double Confidence,
+    string? ErrorMessage);
+
+public interface ILlmService
 {
-    public string Text { get; }
-    public long StartOffsetMs { get; }
-    public long EndOffsetMs { get; }
-
-    public TranscriptReceivedEventArgs(string text, long startOffsetMs, long endOffsetMs)
-    {
-        Text = text;
-        StartOffsetMs = startOffsetMs;
-        EndOffsetMs = endOffsetMs;
-    }
-}
-
-public interface ISttService
-{
-    event EventHandler<TranscriptReceivedEventArgs>? TranscriptReceived;
-    event EventHandler<string>? TranscribingError;
-
     Task InitializeAsync(string modelPath, CancellationToken ct = default);
-    Task WriteAudioChunkAsync(byte[] audioData, CancellationToken ct = default);
-    Task ResetAsync(CancellationToken ct = default);
+    Task<LlmResolutionResult> ResolveReferenceAsync(string rawText, string contextText, CancellationToken ct = default);
 }
