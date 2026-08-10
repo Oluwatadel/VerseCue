@@ -464,3 +464,9 @@ $RECYCLE.BIN/
 # Ignore unverified snapshot testing results
 **/*.received.txt
 /nuget-development.config
+
+ggml-base.bin
+ggml-small.bin
+ggml-medium.bin
+ggml-large.bin
+*.bin
