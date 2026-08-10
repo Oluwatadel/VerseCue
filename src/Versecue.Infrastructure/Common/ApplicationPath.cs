@@ -1,6 +1,6 @@
 namespace Versecue.Infrastructure.Common;
 
-internal static class ApplicationPaths
+public static class ApplicationPaths
 {
     private const string AppName = "VerseCue";
 

@@ -58,7 +58,7 @@ namespace Versecue.Infrastructure.Stt
                 {
                     throw new InvalidOperationException("WhisperEngine is not initialized.");
                 }
-                // Return a new instance of WhisperProcessor
+                // Return the initialized WhisperProcessor
                 return _processor!;
             }
         }

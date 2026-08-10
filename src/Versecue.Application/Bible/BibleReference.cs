@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Versecue.Infrastructure.Audio
+namespace Versecue.Application.Bible
 {
-    internal class AudioChunkEventArgs
+    internal class BibleReference
     {
     }
 }

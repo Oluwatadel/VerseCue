@@ -6,7 +6,14 @@ using System.Threading.Tasks;
 
 namespace Versecue.Infrastructure.Audio
 {
-    internal class AudioConstants
+    public static class AudioConstants
     {
+        public const int SampleRate = 16000;
+
+        public const int Channels = 1;
+
+        public const int BitsPerSample = 16;
+
+        public const int BufferMilliseconds = 500;
     }
 }
