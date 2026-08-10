@@ -1,67 +1,83 @@
-﻿using System.Windows;
-using Versecue.Infrastructure.Audio;
-using Versecue.Infrastructure.Stt;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
+using Versecue.Application.Services;
+using Versecue.Infrastructure;
+using Versecue.Infrastructure.Persistence;
 
 namespace Versecue.Wpf;
 
 public partial class App : System.Windows.Application
 {
+    private IServiceProvider? _serviceProvider;
+
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         try
         {
-            // Audio configuration
-            var audioOptions = new AudioOptions();
+            var configuration =
+                new ConfigurationBuilder()
+                    .SetBasePath(AppContext.BaseDirectory)
+                    .AddJsonFile(
+                        "appsettings.json",
+                        optional: false,
+                        reloadOnChange: false)
+                    .Build();
 
-            // Microphone capture
-            var audioCapture = new NAudioCaptureService(audioOptions);
+            var services = new ServiceCollection();
 
-            // Whisper configuration
-            var whisperOptions = new WhisperOptions();
+            services.AddInfrastructure(configuration);
 
-            // Whisper engine
-            var whisperEngine = new WhisperEngine(whisperOptions);
+            _serviceProvider =
+                services.BuildServiceProvider();
 
-            // Transcription service
-            var transcription = new WhisperTranscriptionService(
-                audioCapture,
-                whisperEngine);
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<VersecueDbContext>();
+            await db.Database.EnsureCreatedAsync();
 
-            // Receive recognized speech
-            transcription.TranscriptReceived += (_, args) =>
+            var verseCue =
+                _serviceProvider
+                    .GetRequiredService<VerseCueService>();
+
+            verseCue.VerseCueDetected += (_, args) =>
             {
                 System.Diagnostics.Debug.WriteLine(
-                    $"TRANSCRIPT: [{args.Text}]");
+                    $"VERSE CUE: [{args.Reference}] " +
+                    $"from transcript: [{args.Transcript}]");
             };
 
-            // Start microphone + Whisper
-            await transcription.StartAsync();
+            await verseCue.StartAsync();
 
-            
-            // Capture for 10 seconds
-            await Task.Delay(TimeSpan.FromSeconds(12));
+            await Task.Delay(
+                TimeSpan.FromSeconds(30));
 
-            // Stop microphone + transcription
-            await transcription.StopAsync();
+            await verseCue.StopAsync();
 
             MessageBox.Show(
-                "Transcription test completed.",
+                "VerseCue pipeline test completed.",
                 "VerseCue",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
-
-            // Clean up
-            transcription.Dispose();
         }
         catch (Exception ex)
         {
             MessageBox.Show(
                 ex.ToString(),
-                "Whisper Test Failed",
+                "VerseCue Startup Failed",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        if (_serviceProvider is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+
+        base.OnExit(e);
     }
 }

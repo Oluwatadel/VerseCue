@@ -1,34 +1,66 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Versecue.Application.Interfaces;
+using Versecue.Application.Services;
+using Versecue.Infrastructure.Audio;
+using Versecue.Infrastructure.Llm;
+using Versecue.Infrastructure.Persistence;
+using Versecue.Infrastructure.Services;
+using Versecue.Infrastructure.Stt;
 
 namespace Versecue.Infrastructure;
 
-/// <summary>
-/// Extension methods for registering Infrastructure layer services.
-/// </summary>
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        var connStr = configuration.GetConnectionString("Default") 
+        var connectionString = configuration.GetConnectionString("VerseCue")
             ?? "Data Source=versecue.db";
 
-        //// EF Core DbContext for mutable data
-        //services.AddDbContext<VersecueDbContext>((sp, options) =>
-        //{
-        //    options.UseSqlite(connStr);
-        //});
+        services.AddDbContext<VersecueDbContext>(options =>
+        {
+            options.UseSqlite(connectionString);
+        });
 
-        //// Dapper Bible Repository for reference data (read-only, high performance)
-        //services.AddScoped<IBibleRepository, DapperBibleRepository>();
-        //services.AddSingleton<IDbConnectionFactory>(new SqliteConnectionFactory(connStr));
+        var whisperOptions =
+            configuration
+                .GetSection("Whisper")
+                .Get<WhisperOptions>()
+            ?? new WhisperOptions();
 
-        //// Register active infrastructure services
-        //services.AddSingleton<IAudioService, AudioService>();
-        //services.AddSingleton<ISttService, SttService>();
-        //services.AddSingleton<ILlmService, LlmService>();
-        //services.AddScoped<BibleImportService>();
+        var audioOptions =
+            configuration
+                .GetSection("Audio")
+                .Get<AudioOptions>()
+            ?? new AudioOptions();
+
+        services.AddSingleton(whisperOptions);
+        services.AddSingleton(audioOptions);
+
+        services.AddSingleton<WhisperEngine>();
+
+        services.AddSingleton<
+            IWhisperTranscriptionService,
+            WhisperTranscriptionService>();
+
+        services.AddSingleton<
+            IAudioCaptureService,
+            NAudioCaptureService>();
+
+        services.AddSingleton<
+            IVerseDetectionService,
+            VerseDetectionService>();
+
+        services.AddSingleton<
+            ILlmService,
+            LlmService>();
+
+        services.AddSingleton<VerseCueService>();
+
+        services.AddSingleton<IBibleReferenceService, BibleReferenceService>();
 
         return services;
     }

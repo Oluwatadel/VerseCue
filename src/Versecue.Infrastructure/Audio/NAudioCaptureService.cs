@@ -1,5 +1,6 @@
 ﻿using NAudio.Wave;
-using Versecue.Application;
+using Versecue.Application.Audio;
+using Versecue.Application.Interfaces;
 
 namespace Versecue.Infrastructure.Audio;
 

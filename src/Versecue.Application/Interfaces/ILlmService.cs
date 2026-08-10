@@ -1,16 +1,8 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Versecue.Application.Dtos;
 
 namespace Versecue.Application.Interfaces;
-
-public sealed record LlmResolutionResult(
-    bool IsSuccess,
-    string? BookName,
-    int? ChapterNumber,
-    int? VerseStart,
-    int? VerseEnd,
-    double Confidence,
-    string? ErrorMessage);
 
 public interface ILlmService
 {

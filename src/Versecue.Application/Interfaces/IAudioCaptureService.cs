@@ -1,6 +1,6 @@
-﻿using Versecue.Infrastructure.Audio;
+﻿using Versecue.Application.Audio;
 
-namespace Versecue.Application
+namespace Versecue.Application.Interfaces
 {
     public interface IAudioCaptureService : IDisposable
     {
