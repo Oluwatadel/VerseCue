@@ -464,8 +464,10 @@ $RECYCLE.BIN/
 **/*.received.txt
 /nuget-development.config
 
-ggml-base.bin
-ggml-small.bin
-ggml-medium.bin
-ggml-large.bin
+# Whisper / GGML models
 *.bin
+ggml-*.bin
+
+# Archives
+*.zip
+
