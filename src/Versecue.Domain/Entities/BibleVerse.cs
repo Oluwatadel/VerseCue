@@ -19,8 +19,10 @@ public class BibleVerse
 
     public BibleVerse(Guid chapterId, int verseNumber, string text)
     {
-        if (verseNumber <= 0) throw new BibleVerseArgumentException($"VerseNumber must be positive, {nameof(verseNumber)}");
-        if (string.IsNullOrWhiteSpace(text)) throw new BibleVerseArgumentException($"Text required, {nameof(text)}");
+        if (verseNumber <= 0) 
+            throw new BibleVerseArgumentException($"VerseNumber must be positive, {nameof(verseNumber)}");
+        if (string.IsNullOrWhiteSpace(text)) 
+            throw new BibleVerseArgumentException($"Text required, {nameof(text)}");
 
         Id = Guid.NewGuid();
         ChapterId = chapterId;
@@ -28,7 +30,7 @@ public class BibleVerse
         Text = text.Trim();
     }
 
-    public BibleVerse(int verseNumber, string text, BibleChapter? chapter = null)
+    public BibleVerse(int verseNumber, string text, BibleChapter chapter)
         : this(chapter.Id, verseNumber, text)
     {
         Chapter = chapter;

@@ -27,10 +27,9 @@ public class BibleChapter
         ChapterNumber = chapterNumber;
     }
 
-    public BibleChapter(Guid bookId, int chapterNumber, BibleBook? book = null)
-        : this(bookId, chapterNumber)
+    public BibleChapter(int chapterNumber, BibleBook book)
+        : this(book.Id, chapterNumber)
     {
-        Id = Guid.NewGuid();
         Book = book;
     }
 

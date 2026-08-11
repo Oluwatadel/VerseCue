@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data.Common;
 using Versecue.Application.Interfaces;
+using Versecue.Application.Interfaces.Repository;
 using Versecue.Application.Services;
 using Versecue.Infrastructure.Audio;
 using Versecue.Infrastructure.Llm;
@@ -32,6 +33,8 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<IBibleRepository, DapperBibleRepository>();
+
+        services.AddScoped<IBibleImportService, BibleImportService>();
 
         var whisperOptions =
             configuration
