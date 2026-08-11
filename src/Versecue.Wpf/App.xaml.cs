@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Windows;
+using Versecue.Application.Interfaces;
 using Versecue.Application.Services;
 using Versecue.Infrastructure;
 using Versecue.Infrastructure.Persistence;
@@ -33,42 +35,57 @@ public partial class App : System.Windows.Application
             _serviceProvider =
                 services.BuildServiceProvider();
 
-            using var scope = _serviceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<VersecueDbContext>();
-            await db.Database.EnsureCreatedAsync();
+            var bibleRepository = _serviceProvider.GetRequiredService<IBibleRepository>();
 
-            var verseCue =
-                _serviceProvider
-                    .GetRequiredService<VerseCueService>();
+            //    var verses =
+            //        await bibleRepository.GetVersesAsync(
+            //            "KJV",
+            //            "John",
+            //            3,
+            //            16);
 
-            verseCue.VerseCueDetected += (_, args) =>
+            //    foreach (var verse in verses)
+            //    {
+            //        System.Diagnostics.Debug.WriteLine(
+            //            $"BIBLE: {verse.VerseNumber} - {verse.Text}");
+            //    }
+
+            //    using var scope = _serviceProvider.CreateScope();
+            //    var db = scope.ServiceProvider.GetRequiredService<VersecueDbContext>();
+            //    await db.Database.EnsureCreatedAsync();
+
+            //    var verseCue =
+            //        _serviceProvider
+            //            .GetRequiredService<VerseCueService>();
+
+            //    verseCue.VerseCueDetected += (_, args) =>
+            //    {
+            //        System.Diagnostics.Debug.WriteLine(
+            //            $"VERSE CUE: [{args.Reference}] " +
+            //            $"from transcript: [{args.Transcript}]");
+            //    };
+
+            //    await verseCue.StartAsync();
+
+            //    await Task.Delay(
+            //        TimeSpan.FromSeconds(30));
+
+            //    await verseCue.StopAsync();
+
+            //    MessageBox.Show(
+            //        "VerseCue pipeline test completed.",
+            //        "VerseCue",
+            //        MessageBoxButton.OK,
+            //        MessageBoxImage.Information);
+            }
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(
-                    $"VERSE CUE: [{args.Reference}] " +
-                    $"from transcript: [{args.Transcript}]");
-            };
-
-            await verseCue.StartAsync();
-
-            await Task.Delay(
-                TimeSpan.FromSeconds(30));
-
-            await verseCue.StopAsync();
-
-            MessageBox.Show(
-                "VerseCue pipeline test completed.",
-                "VerseCue",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                ex.ToString(),
-                "VerseCue Startup Failed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
+                MessageBox.Show(
+                    ex.ToString(),
+                    "VerseCue Startup Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
     }
 
     protected override void OnExit(ExitEventArgs e)

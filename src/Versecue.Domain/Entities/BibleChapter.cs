@@ -7,8 +7,8 @@ namespace Versecue.Domain.Entities;
 /// </summary>
 public class BibleChapter
 {
-    public int Id { get; private set; }
-    public int BookId { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid BookId { get; private set; }
     public int ChapterNumber { get; private set; }
 
     // Navigation
@@ -18,17 +18,19 @@ public class BibleChapter
 
     private BibleChapter() { } // EF Core
 
-    public BibleChapter(int bookId, int chapterNumber)
+    public BibleChapter(Guid bookId, int chapterNumber)
     {
-        if (chapterNumber <= 0) throw new NegativeBibleChapterException($"ChapterNumber must be positive, {nameof(chapterNumber)}");
+        if (chapterNumber <= 0) 
+            throw new NegativeBibleChapterException($"ChapterNumber must be positive, {nameof(chapterNumber)}");
+        Id = Guid.NewGuid();
         BookId = bookId;
         ChapterNumber = chapterNumber;
     }
 
-    public BibleChapter(int id, int bookId, int chapterNumber, BibleBook? book = null)
+    public BibleChapter(Guid bookId, int chapterNumber, BibleBook? book = null)
         : this(bookId, chapterNumber)
     {
-        Id = id;
+        Id = Guid.NewGuid();
         Book = book;
     }
 

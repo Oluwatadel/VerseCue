@@ -11,8 +11,8 @@ namespace Versecue.Domain.Entities;
 /// </summary>
 public class BibleBook
 {
-    public int Id { get; private set; }
-    public int TranslationId { get; private set; }
+    public Guid Id { get; private set; } = Guid.NewGuid();
+    public Guid TranslationId { get; private set; }
     public int CanonicalOrder { get; private set; } // 1-66
     public string Name { get; private set; }
     public Testament Testament { get; private set; }
@@ -25,14 +25,14 @@ public class BibleBook
 
     private BibleBook() { } // EF Core
 
-    public BibleBook(int translationId, int canonicalOrder, string name, Testament testament, IEnumerable<string> aliases, BibleTranslation translation)
+    public BibleBook(int canonicalOrder, string name, Testament testament, IEnumerable<string> aliases, BibleTranslation translation)
     {
         if (canonicalOrder < 1 || canonicalOrder > 66)
             throw new CononicalOutOfRangeException($"{nameof(canonicalOrder)}, Must be 1-66");
         if (string.IsNullOrWhiteSpace(name))
             throw new BibleBookArgumentException($"Name required, {nameof(name)}");
 
-        TranslationId = translationId;
+        TranslationId = translation.Id;
         CanonicalOrder = canonicalOrder;
         Name = name;
         Testament = testament;
@@ -40,11 +40,11 @@ public class BibleBook
         Translation = translation;
     }
 
-    public BibleBook(int id, int translationId, int canonicalOrder, string name, Testament testament, IEnumerable<string> aliases, BibleTranslation translation)
-        : this(translationId, canonicalOrder, name, testament, aliases, translation)
-    {
-        Id = id;
-    }
+    //public BibleBook(int id, int translationId, int canonicalOrder, string name, Testament testament, IEnumerable<string> aliases, BibleTranslation translation)
+    //    : this(translationId, canonicalOrder, name, testament, aliases, translation)
+    //{
+    //    Id = id;
+    //}
 
 
     public IReadOnlyList<string> GetAliases() =>

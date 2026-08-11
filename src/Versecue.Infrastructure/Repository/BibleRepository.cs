@@ -1,70 +1,93 @@
 ﻿using Dapper;
 using Microsoft.Data.Sqlite;
-using Versecue.Application.Bible;
 using Versecue.Application.Interfaces;
+using Versecue.Domain.Entities;
 
 namespace Versecue.Infrastructure.Services;
 
 public sealed class DapperBibleRepository : IBibleRepository
 {
     private readonly string _connectionString;
-
     public DapperBibleRepository(string connectionString)
     {
         _connectionString = connectionString;
     }
 
-    public async Task<BibleVerse?> GetVerseAsync(
-        BibleReference reference,
-        CancellationToken cancellationToken = default)
-    {
-        var verses = await GetVersesAsync(
-            reference,
-            cancellationToken);
-
-        return verses.FirstOrDefault();
-    }
-
     public async Task<IReadOnlyList<BibleVerse>> GetVersesAsync(
-        BibleReference reference,
+        string translationCode,
+        string bookName,
+        int chapterNumber,
+        int verseStart,
+        int? verseEnd = null,
         CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(translationCode))
+            throw new ArgumentException(
+                "Translation code is required.",
+                nameof(translationCode));
+
+        if (string.IsNullOrWhiteSpace(bookName))
+            throw new ArgumentException(
+                "Book name is required.",
+                nameof(bookName));
+
+        if (chapterNumber <= 0)
+            throw new ArgumentOutOfRangeException(
+                nameof(chapterNumber));
+
+        if (verseStart <= 0)
+            throw new ArgumentOutOfRangeException(
+                nameof(verseStart));
+
+        if (verseEnd.HasValue && verseEnd.Value < verseStart)
+            throw new ArgumentException(
+                "Verse end cannot be less than verse start.",
+                nameof(verseEnd));
+
+        const string sql = """
+            SELECT
+                v.Id,
+                v.ChapterId,
+                v.VerseNumber,
+                v.Text
+            FROM BibleVerse v
+            INNER JOIN BibleChapter c
+                ON c.Id = v.ChapterId
+            INNER JOIN BibleBook b
+                ON b.Id = c.BookId
+            INNER JOIN BibleTranslation t
+                ON t.Id = b.TranslationId
+            WHERE t.Code = @TranslationCode
+              AND b.Name = @BookName
+              AND c.ChapterNumber = @ChapterNumber
+              AND v.VerseNumber >= @VerseStart
+              AND (
+                    @VerseEnd IS NULL
+                    OR v.VerseNumber <= @VerseEnd
+                  )
+            ORDER BY v.VerseNumber;
+            """;
 
         await using var connection =
             new SqliteConnection(_connectionString);
 
         await connection.OpenAsync(cancellationToken);
 
-        const string sql = """
-            SELECT
-                BookName,
-                ChapterNumber,
-                VerseNumber,
-                Text
-            FROM BibleVerses
-            WHERE BookName = @BookName
-              AND ChapterNumber = @ChapterNumber
-              AND VerseNumber >= @VerseStart
-              AND (
-                    @VerseEnd IS NULL
-                    OR VerseNumber <= @VerseEnd
-                  )
-            ORDER BY VerseNumber;
-            """;
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                TranslationCode = translationCode,
+                BookName = bookName,
+                ChapterNumber = chapterNumber,
+                VerseStart = verseStart,
+                VerseEnd = verseEnd
+            },
+            cancellationToken: cancellationToken);
 
-        var rows = await connection.QueryAsync<BibleVerse>(
-            new CommandDefinition(
-                sql,
-                new
-                {
-                    BookName = reference.BookName,
-                    ChapterNumber = reference.ChapterNumber,
-                    VerseStart = reference.VerseStart,
-                    VerseEnd = reference.VerseEnd
-                },
-                cancellationToken: cancellationToken));
+        var verses =
+            await connection.QueryAsync<BibleVerse>(command);
 
-        return rows.AsList();
+        return verses.AsList();
     }
 }

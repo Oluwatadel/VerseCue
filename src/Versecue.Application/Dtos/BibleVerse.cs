@@ -1,7 +1,7 @@
-﻿namespace Versecue.Application.Bible;
+﻿//namespace Versecue.Application.Bible;
 
-public sealed record BibleVerse(
-    string BookName,
-    int ChapterNumber,
-    int VerseNumber,
-    string Text);
+//public sealed record BibleVerse(
+//    string BookName,
+//    int ChapterNumber,
+//    int VerseNumber,
+//    string Text);

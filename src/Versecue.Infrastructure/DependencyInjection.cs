@@ -1,6 +1,8 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Data.Common;
 using Versecue.Application.Interfaces;
 using Versecue.Application.Services;
 using Versecue.Infrastructure.Audio;
@@ -8,6 +10,7 @@ using Versecue.Infrastructure.Llm;
 using Versecue.Infrastructure.Persistence;
 using Versecue.Infrastructure.Services;
 using Versecue.Infrastructure.Stt;
+using DapperBibleRepository = Versecue.Infrastructure.Persistence.DapperBibleRepository;
 
 namespace Versecue.Infrastructure;
 
@@ -18,12 +21,17 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("VerseCue")
-            ?? "Data Source=versecue.db";
+            ?? throw new InvalidOperationException("Connection string 'VerseCue' is not configured.");
+
+        //services.AddSingleton<Func<DbConnection>>(_ =>
+        //    () => new SqliteConnection(connectionString));
 
         services.AddDbContext<VersecueDbContext>(options =>
         {
             options.UseSqlite(connectionString);
         });
+
+        services.AddSingleton<IBibleRepository, DapperBibleRepository>();
 
         var whisperOptions =
             configuration

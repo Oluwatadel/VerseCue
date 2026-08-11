@@ -7,8 +7,8 @@ namespace Versecue.Domain.Entities;
 /// </summary>
 public class BibleVerse
 {
-    public int Id { get; private set; }
-    public int ChapterId { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid ChapterId { get; private set; }
     public int VerseNumber { get; private set; }
     public string Text { get; private set; }
 
@@ -17,20 +17,20 @@ public class BibleVerse
 
     private BibleVerse() { } // EF Core
 
-    public BibleVerse(int chapterId, int verseNumber, string text)
+    public BibleVerse(Guid chapterId, int verseNumber, string text)
     {
         if (verseNumber <= 0) throw new BibleVerseArgumentException($"VerseNumber must be positive, {nameof(verseNumber)}");
         if (string.IsNullOrWhiteSpace(text)) throw new BibleVerseArgumentException($"Text required, {nameof(text)}");
 
+        Id = Guid.NewGuid();
         ChapterId = chapterId;
         VerseNumber = verseNumber;
         Text = text.Trim();
     }
 
-    public BibleVerse(int id, int chapterId, int verseNumber, string text, BibleChapter? chapter = null)
-        : this(chapterId, verseNumber, text)
+    public BibleVerse(int verseNumber, string text, BibleChapter? chapter = null)
+        : this(chapter.Id, verseNumber, text)
     {
-        Id = id;
         Chapter = chapter;
     }
 
