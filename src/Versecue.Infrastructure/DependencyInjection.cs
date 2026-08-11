@@ -19,9 +19,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration, String? connectionString = null)
     {
-        var connectionString = configuration.GetConnectionString("VerseCue")
+        connectionString ??= configuration.GetConnectionString("VerseCue")
             ?? throw new InvalidOperationException("Connection string 'VerseCue' is not configured.");
 
         //services.AddSingleton<Func<DbConnection>>(_ =>

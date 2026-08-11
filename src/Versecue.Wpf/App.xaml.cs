@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.IO;
 using System.Windows;
 using Versecue.Application.Interfaces;
-using Versecue.Application.Services;
 using Versecue.Infrastructure;
+using Versecue.Infrastructure.Common;
 using Versecue.Infrastructure.Persistence;
 
 namespace Versecue.Wpf;
@@ -12,13 +13,18 @@ namespace Versecue.Wpf;
 public partial class App : System.Windows.Application
 {
     private IServiceProvider? _serviceProvider;
+    private IServiceScope? _serviceScope;
 
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
         try
         {
+            // ---------------------------------------------------------
+            // Configuration
+            // ---------------------------------------------------------
+
             var configuration =
                 new ConfigurationBuilder()
                     .SetBasePath(AppContext.BaseDirectory)
@@ -28,68 +34,74 @@ public partial class App : System.Windows.Application
                         reloadOnChange: false)
                     .Build();
 
+            // ---------------------------------------------------------
+            // Dependency Injection
+            // ---------------------------------------------------------
+
             var services = new ServiceCollection();
 
-            services.AddInfrastructure(configuration);
+            /*
+             * We intentionally do NOT use:
+             *
+             *     configuration.GetConnectionString("VerseCue")
+             *
+             * for the SQLite database.
+             *
+             * The database is application/user data and should live
+             * under LocalApplicationData rather than beside the EXE.
+             */
+
+            var databasePath =
+                VerseCueDatabasePath.GetDatabasePath();
+
+            var connectionString =
+                $"Data Source={databasePath}";
+
+            services.AddInfrastructure(
+                configuration,
+                connectionString);
+
+            services.AddTransient<MainWindow>();
 
             _serviceProvider =
                 services.BuildServiceProvider();
 
-            var bibleRepository = _serviceProvider.GetRequiredService<IBibleRepository>();
+            // ---------------------------------------------------------
+            // Create application scope
+            // ---------------------------------------------------------
 
-            //    var verses =
-            //        await bibleRepository.GetVersesAsync(
-            //            "KJV",
-            //            "John",
-            //            3,
-            //            16);
+            _serviceScope =
+                _serviceProvider.CreateScope();
 
-            //    foreach (var verse in verses)
-            //    {
-            //        System.Diagnostics.Debug.WriteLine(
-            //            $"BIBLE: {verse.VerseNumber} - {verse.Text}");
-            //    }
+            // ---------------------------------------------------------
+            // Resolve and show MainWindow
+            // ---------------------------------------------------------
 
-            //    using var scope = _serviceProvider.CreateScope();
-            //    var db = scope.ServiceProvider.GetRequiredService<VersecueDbContext>();
-            //    await db.Database.EnsureCreatedAsync();
+            var mainWindow =
+                _serviceScope
+                    .ServiceProvider
+                    .GetRequiredService<MainWindow>();
 
-            //    var verseCue =
-            //        _serviceProvider
-            //            .GetRequiredService<VerseCueService>();
+            MainWindow = mainWindow;
 
-            //    verseCue.VerseCueDetected += (_, args) =>
-            //    {
-            //        System.Diagnostics.Debug.WriteLine(
-            //            $"VERSE CUE: [{args.Reference}] " +
-            //            $"from transcript: [{args.Transcript}]");
-            //    };
+            mainWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "VerseCue Startup Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
 
-            //    await verseCue.StartAsync();
-
-            //    await Task.Delay(
-            //        TimeSpan.FromSeconds(30));
-
-            //    await verseCue.StopAsync();
-
-            //    MessageBox.Show(
-            //        "VerseCue pipeline test completed.",
-            //        "VerseCue",
-            //        MessageBoxButton.OK,
-            //        MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    ex.ToString(),
-                    "VerseCue Startup Failed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-            }
+            Shutdown();
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        _serviceScope?.Dispose();
+
         if (_serviceProvider is IDisposable disposable)
         {
             disposable.Dispose();

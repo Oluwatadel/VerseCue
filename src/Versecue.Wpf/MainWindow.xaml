@@ -3,10 +3,190 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Versecue.Wpf"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="VerseCue"
+        Height="600"
+        Width="1000"
+        MinHeight="500"
+        MinWidth="800"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid Margin="24">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="24"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0">
+
+            <TextBlock
+                Text="VerseCue"
+                FontSize="32"
+                FontWeight="Bold"/>
+
+            <TextBlock
+                Text="Bible &amp; Reference Data"
+                FontSize="16"
+                Foreground="Gray"
+                Margin="0,4,0,0"/>
+
+        </StackPanel>
+
+        <!-- Bible information -->
+        <Border
+            Grid.Row="2"
+            Padding="20"
+            BorderBrush="#DDDDDD"
+            BorderThickness="1"
+            CornerRadius="8">
+
+            <Grid>
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+
+                    <TextBlock
+                        Text="Installed Bible"
+                        FontSize="18"
+                        FontWeight="SemiBold"/>
+
+                    <TextBlock
+                        x:Name="TranslationText"
+                        Text="No Bible installed"
+                        FontSize="22"
+                        Margin="0,8,0,0"/>
+
+                    <TextBlock
+                        x:Name="LanguageText"
+                        Text=""
+                        Foreground="Gray"
+                        Margin="0,2,0,0"/>
+
+                </StackPanel>
+
+                <Button
+                    Grid.Column="1"
+                    Content="Import Bible"
+                    Width="140"
+                    Height="42"
+                    Margin="20,0,0,0"
+                    Click="ImportBible_Click"/>
+
+            </Grid>
+
+        </Border>
+
+        <!-- Statistics -->
+        <Grid Grid.Row="4">
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border
+                Grid.Column="0"
+                Padding="20"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8">
+
+                <StackPanel>
+                    <TextBlock
+                        Text="Translations"
+                        Foreground="Gray"/>
+
+                    <TextBlock
+                        x:Name="TranslationCountText"
+                        Text="0"
+                        FontSize="30"
+                        FontWeight="Bold"
+                        Margin="0,8,0,0"/>
+                </StackPanel>
+
+            </Border>
+
+            <Border
+                Grid.Column="2"
+                Padding="20"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8">
+
+                <StackPanel>
+                    <TextBlock
+                        Text="Books"
+                        Foreground="Gray"/>
+
+                    <TextBlock
+                        x:Name="BookCountText"
+                        Text="0"
+                        FontSize="30"
+                        FontWeight="Bold"
+                        Margin="0,8,0,0"/>
+                </StackPanel>
+
+            </Border>
+
+            <Border
+                Grid.Column="4"
+                Padding="20"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8">
+
+                <StackPanel>
+                    <TextBlock
+                        Text="Chapters"
+                        Foreground="Gray"/>
+
+                    <TextBlock
+                        x:Name="ChapterCountText"
+                        Text="0"
+                        FontSize="30"
+                        FontWeight="Bold"
+                        Margin="0,8,0,0"/>
+                </StackPanel>
+
+            </Border>
+
+            <Border
+                Grid.Column="6"
+                Padding="20"
+                BorderBrush="#DDDDDD"
+                BorderThickness="1"
+                CornerRadius="8">
+
+                <StackPanel>
+                    <TextBlock
+                        Text="Verses"
+                        Foreground="Gray"/>
+
+                    <TextBlock
+                        x:Name="VerseCountText"
+                        Text="0"
+                        FontSize="30"
+                        FontWeight="Bold"
+                        Margin="0,8,0,0"/>
+                </StackPanel>
+
+            </Border>
+
+        </Grid>
 
     </Grid>
 </Window>
