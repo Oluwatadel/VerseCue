@@ -3,10 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
-using Versecue.Application.Interfaces;
 using Versecue.Infrastructure;
-using Versecue.Infrastructure.Common;
-using Versecue.Infrastructure.Persistence;
 
 namespace Versecue.Wpf;
 
@@ -35,46 +32,67 @@ public partial class App : System.Windows.Application
                     .Build();
 
             // ---------------------------------------------------------
-            // Dependency Injection
+            // Runtime database path
+            // ---------------------------------------------------------
+
+            var databasePath =
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    "versecue.db");
+
+            var runtimeConnectionString =
+                $"Data Source={databasePath}";
+
+            // ---------------------------------------------------------
+            // Override ConnectionStrings:VerseCue
+            // ---------------------------------------------------------
+
+            var runtimeConfiguration =
+                new ConfigurationBuilder()
+                    .AddConfiguration(configuration)
+                    .AddInMemoryCollection(
+                        new Dictionary<string, string?>
+                        {
+                            ["ConnectionStrings:VerseCue"] =
+                                runtimeConnectionString
+                        })
+                    .Build();
+
+            // ---------------------------------------------------------
+            // Services
             // ---------------------------------------------------------
 
             var services = new ServiceCollection();
 
-            /*
-             * We intentionally do NOT use:
-             *
-             *     configuration.GetConnectionString("VerseCue")
-             *
-             * for the SQLite database.
-             *
-             * The database is application/user data and should live
-             * under LocalApplicationData rather than beside the EXE.
-             */
+            // IMPORTANT:
+            // Register IConfiguration so DapperBibleRepository
+            // can receive IConfiguration in its constructor.
+            services.AddSingleton<IConfiguration>(
+                runtimeConfiguration);
 
-            var databasePath =
-                VerseCueDatabasePath.GetDatabasePath();
-
-            var connectionString =
-                $"Data Source={databasePath}";
-
+            // Infrastructure
             services.AddInfrastructure(
-                configuration,
-                connectionString);
+                runtimeConfiguration);
 
+            // Main window
             services.AddTransient<MainWindow>();
+
+            // ---------------------------------------------------------
+            // Build service provider ONCE
+            // ---------------------------------------------------------
 
             _serviceProvider =
                 services.BuildServiceProvider();
 
             // ---------------------------------------------------------
-            // Create application scope
+            // Create scope
             // ---------------------------------------------------------
 
             _serviceScope =
                 _serviceProvider.CreateScope();
 
             // ---------------------------------------------------------
-            // Resolve and show MainWindow
+            // Resolve MainWindow
             // ---------------------------------------------------------
 
             var mainWindow =

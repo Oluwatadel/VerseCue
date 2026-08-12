@@ -5,23 +5,29 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="VerseCue"
-        Height="600"
-        Width="1000"
-        MinHeight="500"
-        MinWidth="800"
+        Height="800"
+        Width="1200"
+        MinHeight="650"
+        MinWidth="950"
         WindowStartupLocation="CenterScreen">
 
     <Grid Margin="24">
 
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="24"/>
+            <RowDefinition Height="20"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="24"/>
+            <RowDefinition Height="20"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="20"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+
+        <!-- ========================================================= -->
+        <!-- HEADER -->
+        <!-- ================================================= -->
+
         <StackPanel Grid.Row="0">
 
             <TextBlock
@@ -37,7 +43,11 @@
 
         </StackPanel>
 
-        <!-- Bible information -->
+
+        <!-- ========================================================= -->
+        <!-- INSTALLED BIBLE -->
+        <!-- ================================================= -->
+
         <Border
             Grid.Row="2"
             Padding="20"
@@ -51,6 +61,9 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+
+
+                <!-- Bible information -->
 
                 <StackPanel Grid.Column="0">
 
@@ -73,6 +86,9 @@
 
                 </StackPanel>
 
+
+                <!-- Import -->
+
                 <Button
                     Grid.Column="1"
                     Content="Import Bible"
@@ -85,7 +101,11 @@
 
         </Border>
 
-        <!-- Statistics -->
+
+        <!-- ========================================================= -->
+        <!-- STATISTICS -->
+        <!-- ========================================================= -->
+
         <Grid Grid.Row="4">
 
             <Grid.ColumnDefinitions>
@@ -98,6 +118,9 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
+
+            <!-- Translations -->
+
             <Border
                 Grid.Column="0"
                 Padding="20"
@@ -106,6 +129,7 @@
                 CornerRadius="8">
 
                 <StackPanel>
+
                     <TextBlock
                         Text="Translations"
                         Foreground="Gray"/>
@@ -116,9 +140,13 @@
                         FontSize="30"
                         FontWeight="Bold"
                         Margin="0,8,0,0"/>
+
                 </StackPanel>
 
             </Border>
+
+
+            <!-- Books -->
 
             <Border
                 Grid.Column="2"
@@ -128,6 +156,7 @@
                 CornerRadius="8">
 
                 <StackPanel>
+
                     <TextBlock
                         Text="Books"
                         Foreground="Gray"/>
@@ -138,9 +167,13 @@
                         FontSize="30"
                         FontWeight="Bold"
                         Margin="0,8,0,0"/>
+
                 </StackPanel>
 
             </Border>
+
+
+            <!-- Chapters -->
 
             <Border
                 Grid.Column="4"
@@ -150,6 +183,7 @@
                 CornerRadius="8">
 
                 <StackPanel>
+
                     <TextBlock
                         Text="Chapters"
                         Foreground="Gray"/>
@@ -160,9 +194,13 @@
                         FontSize="30"
                         FontWeight="Bold"
                         Margin="0,8,0,0"/>
+
                 </StackPanel>
 
             </Border>
+
+
+            <!-- Verses -->
 
             <Border
                 Grid.Column="6"
@@ -172,6 +210,7 @@
                 CornerRadius="8">
 
                 <StackPanel>
+
                     <TextBlock
                         Text="Verses"
                         Foreground="Gray"/>
@@ -182,11 +221,219 @@
                         FontSize="30"
                         FontWeight="Bold"
                         Margin="0,8,0,0"/>
+
                 </StackPanel>
 
             </Border>
 
         </Grid>
 
+
+        <!-- ========================================================= -->
+        <!-- BIBLE BROWSER + VERSES -->
+        <!-- ========================================================= -->
+
+        <Border
+            Grid.Row="6"
+            Padding="20"
+            BorderBrush="#DDDDDD"
+            BorderThickness="1"
+            CornerRadius="8">
+
+            <Grid>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+
+                <!-- Browser title -->
+
+                <TextBlock
+                    Grid.Row="0"
+                    Text="Bible Browser"
+                    FontSize="20"
+                    FontWeight="SemiBold"/>
+
+
+                <!-- ================================================= -->
+                <!-- SELECTORS -->
+                <!-- ================================================= -->
+
+                <Grid Grid.Row="2">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="1*"/>
+                    </Grid.ColumnDefinitions>
+
+
+                    <!-- Translation -->
+
+                    <StackPanel Grid.Column="0">
+
+                        <TextBlock
+                            Text="Translation"
+                            Foreground="Gray"
+                            Margin="0,0,0,6"/>
+
+                        <ComboBox
+                            x:Name="TranslationComboBox"
+                            Height="38"
+                            DisplayMemberPath="Name"
+                            SelectionChanged="TranslationComboBox_SelectionChanged"/>
+
+                    </StackPanel>
+
+
+                    <!-- Book -->
+
+                    <StackPanel Grid.Column="2">
+
+                        <TextBlock
+                            Text="Book"
+                            Foreground="Gray"
+                            Margin="0,0,0,6"/>
+
+                        <ComboBox
+                            x:Name="BookComboBox"
+                            Height="38"
+                            DisplayMemberPath="Name"
+                            IsEnabled="False"
+                            SelectionChanged="BookComboBox_SelectionChanged"/>
+
+                    </StackPanel>
+
+
+                    <!-- Chapter -->
+
+                    <StackPanel Grid.Column="4">
+
+                        <TextBlock
+                            Text="Chapter"
+                            Foreground="Gray"
+                            Margin="0,0,0,6"/>
+
+                        <ComboBox
+                            x:Name="ChapterComboBox"
+                            Height="38"
+                            DisplayMemberPath="ChapterNumber"
+                            IsEnabled="False"
+                            SelectionChanged="ChapterComboBox_SelectionChanged"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+
+                <!-- ================================================= -->
+                <!-- VERSE LIST -->
+                <!-- ================================================= -->
+
+                <Border
+                    Grid.Row="4"
+                    BorderBrush="#E0E0E0"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="12">
+
+                    <Grid>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="10"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+
+                        <!-- Verse header -->
+
+                        <TextBlock
+                            Grid.Row="0"
+                            x:Name="VerseHeaderText"
+                            Text="Select a chapter to view verses"
+                            FontSize="17"
+                            FontWeight="SemiBold"/>
+
+
+                        <!-- ================================================= -->
+                        <!-- VERSE LIST -->
+                        <!-- ================================================= -->
+
+                        <ListView
+                            Grid.Row="2"
+                            x:Name="VerseListView"
+                            ItemsSource="{Binding}"
+                            BorderThickness="0"
+                            Background="Transparent"
+                            ScrollViewer.VerticalScrollBarVisibility="Auto"
+                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                            SelectionMode="Single">
+
+                            <ListView.ItemTemplate>
+
+                                <DataTemplate>
+
+                                    <Border
+                                        Padding="10"
+                                        Margin="0,0,0,8"
+                                        BorderBrush="#EEEEEE"
+                                        BorderThickness="0,0,0,1">
+
+                                        <Grid>
+
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="55"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+
+                                            <!-- Verse number -->
+
+                                            <TextBlock
+                                                Grid.Column="0"
+                                                Text="{Binding VerseNumber}"
+                                                FontSize="16"
+                                                FontWeight="Bold"
+                                                Foreground="#666666"
+                                                VerticalAlignment="Top"/>
+
+
+                                            <!-- Verse text -->
+
+                                            <TextBlock
+                                                Grid.Column="1"
+                                                Text="{Binding Text}"
+                                                FontSize="16"
+                                                TextWrapping="Wrap"
+                                                LineHeight="24"
+                                                VerticalAlignment="Top"/>
+
+                                        </Grid>
+
+                                    </Border>
+
+                                </DataTemplate>
+
+                            </ListView.ItemTemplate>
+
+                        </ListView>
+
+                    </Grid>
+
+                </Border>
+
+            </Grid>
+
+        </Border>
+
     </Grid>
+
 </Window>

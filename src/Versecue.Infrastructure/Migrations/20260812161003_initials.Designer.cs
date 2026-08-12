@@ -11,7 +11,7 @@ using Versecue.Infrastructure.Persistence;
 namespace Versecue.Infrastructure.Migrations
 {
     [DbContext(typeof(VersecueDbContext))]
-    [Migration("20260811160836_initials")]
+    [Migration("20260812161003_initials")]
     partial class initials
     {
         /// <inheritdoc />

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore;
@@ -104,10 +105,61 @@ public sealed class BibleImportService : IBibleImportService
                 }
             }
 
+            var firstBook = translation.Books.First();
+
+            var firstChapter = firstBook.Chapters.First();
+
+            var firstVerse = firstChapter.Verses.First();
+
+            Debug.WriteLine(
+                $"IMPORT CHECK BOOK: {firstBook.Name} Id={firstBook.Id}");
+
+            Debug.WriteLine(
+                $"IMPORT CHECK CHAPTER: " +
+                $"Id={firstChapter.Id} BookId={firstChapter.BookId}");
+
+            Debug.WriteLine(
+                $"IMPORT CHECK VERSE: " +
+                $"Id={firstVerse.Id} ChapterId={firstVerse.ChapterId}");
+
             _db.BibleTranslations.Add(translation);
 
             await _db.SaveChangesAsync(
                 cancellationToken);
+
+            var savedChapter =
+                await _db.BibleChapters
+                    .AsNoTracking()
+                    .OrderBy(x => x.BookId)
+                    .ThenBy(x => x.ChapterNumber)
+                    .FirstOrDefaultAsync(
+                        cancellationToken);
+
+            if (savedChapter is not null)
+            {
+                Debug.WriteLine(
+                    $"SAVED CHAPTER: " +
+                    $"Id={savedChapter.Id} " +
+                    $"BookId={savedChapter.BookId} " +
+                    $"Chapter={savedChapter.ChapterNumber}");
+            }
+
+            var savedVerse =
+                await _db.BibleVerses
+                    .AsNoTracking()
+                    .OrderBy(x => x.ChapterId)
+                    .ThenBy(x => x.VerseNumber)
+                    .FirstOrDefaultAsync(
+                        cancellationToken);
+
+            if (savedVerse is not null)
+            {
+                Debug.WriteLine(
+                    $"SAVED VERSE: " +
+                    $"Id={savedVerse.Id} " +
+                    $"ChapterId={savedVerse.ChapterId} " +
+                    $"Verse={savedVerse.VerseNumber}");
+            }
 
             await transaction.CommitAsync(
                 cancellationToken);
