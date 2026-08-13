@@ -11,45 +11,63 @@
 
     <Grid Margin="50">
 
-        <ItemsControl x:Name="VerseItemsControl">
+        <!--
+            The entire verse group scales together.
 
-            <ItemsControl.ItemTemplate>
+            This means:
+            - 1 short verse = large text
+            - 1 long verse = smaller text
+            - 2 verses = both scale to fit
+            - 3 verses = both/all scale to fit
+            - No scrolling
+        -->
 
-                <DataTemplate>
+        <Viewbox
+            Stretch="Uniform"
+            StretchDirection="DownOnly">
 
-                    <Grid Height="{Binding DisplayHeight}">
+            <ItemsControl
+                x:Name="VerseItemsControl"
+                Width="950">
 
-                        <Viewbox
-                            Stretch="Uniform"
-                            StretchDirection="DownOnly"
-                            Margin="10,8">
+                <ItemsControl.ItemTemplate>
+
+                    <DataTemplate>
+
+                        <StackPanel
+                            Margin="0,0,0,35">
+
+                            <!-- Verse text -->
 
                             <TextBlock
+                                Text="{Binding Verse.Text}"
                                 Foreground="White"
                                 FontSize="42"
                                 FontWeight="SemiBold"
                                 TextWrapping="Wrap"
                                 TextAlignment="Center"
                                 HorizontalAlignment="Center"
-                                VerticalAlignment="Center"
-                                MaxWidth="900">
+                                MaxWidth="950"/>
 
-                                <Run Text="{Binding Verse.Text}"/>
-                                <Run Text=" ("/>
-                                <Run Text="{Binding Reference}"/>
-                                <Run Text=")"/>
+                            <!-- Reference -->
 
-                            </TextBlock>
+                            <TextBlock
+                                Text="{Binding Reference}"
+                                Foreground="#AAAAAA"
+                                FontSize="22"
+                                Margin="0,18,0,0"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Center"/>
 
-                        </Viewbox>
+                        </StackPanel>
 
-                    </Grid>
+                    </DataTemplate>
 
-                </DataTemplate>
+                </ItemsControl.ItemTemplate>
 
-            </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
-        </ItemsControl>
+        </Viewbox>
 
     </Grid>
 
