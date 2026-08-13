@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -18,6 +18,8 @@ public partial class VerseDisplayWindow : Window
         public BibleVerseListItem Verse { get; init; } = null!;
 
         public string Reference { get; init; } = string.Empty;
+
+        public double DisplayHeight { get; set; }
     }
 
     public void ShowVerses(
@@ -38,8 +40,18 @@ public partial class VerseDisplayWindow : Window
                 })
                 .ToList();
 
-        VerseItemsControl.ItemsSource =
-            displayItems;
+        // Divide the available screen area between the selected verses.
+        // This prevents the display from becoming taller when 2 or 3
+        // verses are selected.
+        var availableHeight = Math.Max(250, ActualHeight - 100);
+        var itemHeight = availableHeight / displayItems.Count;
+
+        foreach (var item in displayItems)
+        {
+            item.DisplayHeight = itemHeight;
+        }
+
+        VerseItemsControl.ItemsSource = displayItems;
 
         if (!IsVisible)
         {
