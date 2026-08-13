@@ -24,9 +24,9 @@
         </Grid.RowDefinitions>
 
 
-        <!-- ========================================================= -->
+        <!-- ===================================================== -->
         <!-- HEADER -->
-        <!-- ================================================= -->
+        <!-- ===================================================== -->
 
         <StackPanel Grid.Row="0">
 
@@ -36,7 +36,7 @@
                 FontWeight="Bold"/>
 
             <TextBlock
-                Text="Bible &amp; Reference Data"
+                Text="AI Bible Listening &amp; Verse Display"
                 FontSize="16"
                 Foreground="Gray"
                 Margin="0,4,0,0"/>
@@ -44,9 +44,9 @@
         </StackPanel>
 
 
-        <!-- ========================================================= -->
+        <!-- ===================================================== -->
         <!-- INSTALLED BIBLE -->
-        <!-- ================================================= -->
+        <!-- ===================================================== -->
 
         <Border
             Grid.Row="2"
@@ -61,9 +61,6 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-
-
-                <!-- Bible information -->
 
                 <StackPanel Grid.Column="0">
 
@@ -86,9 +83,6 @@
 
                 </StackPanel>
 
-
-                <!-- Import -->
-
                 <Button
                     Grid.Column="1"
                     Content="Import Bible"
@@ -102,19 +96,19 @@
         </Border>
 
 
-        <!-- ========================================================= -->
+        <!-- ===================================================== -->
         <!-- STATISTICS -->
-        <!-- ========================================================= -->
+        <!-- ===================================================== -->
 
         <Grid Grid.Row="4">
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="16"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="16"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="16"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
@@ -123,7 +117,7 @@
 
             <Border
                 Grid.Column="0"
-                Padding="20"
+                Padding="18"
                 BorderBrush="#DDDDDD"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -150,7 +144,7 @@
 
             <Border
                 Grid.Column="2"
-                Padding="20"
+                Padding="18"
                 BorderBrush="#DDDDDD"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -177,7 +171,7 @@
 
             <Border
                 Grid.Column="4"
-                Padding="20"
+                Padding="18"
                 BorderBrush="#DDDDDD"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -204,7 +198,7 @@
 
             <Border
                 Grid.Column="6"
-                Padding="20"
+                Padding="18"
                 BorderBrush="#DDDDDD"
                 BorderThickness="1"
                 CornerRadius="8">
@@ -229,9 +223,9 @@
         </Grid>
 
 
-        <!-- ========================================================= -->
-        <!-- BIBLE BROWSER + VERSES -->
-        <!-- ========================================================= -->
+        <!-- ===================================================== -->
+        <!-- BIBLE BROWSER -->
+        <!-- ===================================================== -->
 
         <Border
             Grid.Row="6"
@@ -244,9 +238,10 @@
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="20"/>
+                    <RowDefinition Height="16"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="20"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -261,16 +256,16 @@
 
 
                 <!-- ================================================= -->
-                <!-- SELECTORS -->
+                <!-- DROPDOWNS -->
                 <!-- ================================================= -->
 
                 <Grid Grid.Row="2">
 
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="16"/>
                         <ColumnDefinition Width="1*"/>
                     </Grid.ColumnDefinitions>
 
@@ -334,101 +329,74 @@
 
 
                 <!-- ================================================= -->
+                <!-- VERSE HEADER -->
+                <!-- ================================================= -->
+
+                <TextBlock
+                    Grid.Row="4"
+                    x:Name="VerseReferenceText"
+                    Text="Select a chapter to view verses"
+                    FontSize="18"
+                    FontWeight="SemiBold"/>
+
+
+                <!-- ================================================= -->
                 <!-- VERSE LIST -->
                 <!-- ================================================= -->
 
-                <Border
-                    Grid.Row="4"
-                    BorderBrush="#E0E0E0"
+                <ListView
+                    Grid.Row="5"
+                    x:Name="VerseComboBox"
+                    Margin="0,12,0,0"
+                    BorderBrush="#DDDDDD"
                     BorderThickness="1"
-                    CornerRadius="6"
-                    Padding="12">
+                    ScrollViewer.VerticalScrollBarVisibility="Auto">
 
-                    <Grid>
+                    <ListView.ItemTemplate>
 
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="10"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                        <DataTemplate>
 
+                            <Border
+                                Padding="12"
+                                BorderBrush="#EEEEEE"
+                                BorderThickness="0,0,0,1">
 
-                        <!-- Verse header -->
+                                <Grid>
 
-                        <TextBlock
-                            Grid.Row="0"
-                            x:Name="VerseHeaderText"
-                            Text="Select a chapter to view verses"
-                            FontSize="17"
-                            FontWeight="SemiBold"/>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
 
 
-                        <!-- ================================================= -->
-                        <!-- VERSE LIST -->
-                        <!-- ================================================= -->
+                                    <!-- Verse number -->
 
-                        <ListView
-                            Grid.Row="2"
-                            x:Name="VerseListView"
-                            ItemsSource="{Binding}"
-                            BorderThickness="0"
-                            Background="Transparent"
-                            ScrollViewer.VerticalScrollBarVisibility="Auto"
-                            ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                            SelectionMode="Single">
-
-                            <ListView.ItemTemplate>
-
-                                <DataTemplate>
-
-                                    <Border
-                                        Padding="10"
-                                        Margin="0,0,0,8"
-                                        BorderBrush="#EEEEEE"
-                                        BorderThickness="0,0,0,1">
-
-                                        <Grid>
-
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="55"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        Grid.Column="0"
+                                        Text="{Binding VerseNumber}"
+                                        FontSize="18"
+                                        FontWeight="Bold"
+                                        Foreground="#666666"/>
 
 
-                                            <!-- Verse number -->
+                                    <!-- Verse text -->
 
-                                            <TextBlock
-                                                Grid.Column="0"
-                                                Text="{Binding VerseNumber}"
-                                                FontSize="16"
-                                                FontWeight="Bold"
-                                                Foreground="#666666"
-                                                VerticalAlignment="Top"/>
+                                    <TextBlock
+                                        Grid.Column="1"
+                                        Text="{Binding Text}"
+                                        FontSize="18"
+                                        TextWrapping="Wrap"
+                                        LineHeight="28"/>
 
+                                </Grid>
 
-                                            <!-- Verse text -->
+                            </Border>
 
-                                            <TextBlock
-                                                Grid.Column="1"
-                                                Text="{Binding Text}"
-                                                FontSize="16"
-                                                TextWrapping="Wrap"
-                                                LineHeight="24"
-                                                VerticalAlignment="Top"/>
+                        </DataTemplate>
 
-                                        </Grid>
+                    </ListView.ItemTemplate>
 
-                                    </Border>
-
-                                </DataTemplate>
-
-                            </ListView.ItemTemplate>
-
-                        </ListView>
-
-                    </Grid>
-
-                </Border>
+                </ListView>
 
             </Grid>
 
