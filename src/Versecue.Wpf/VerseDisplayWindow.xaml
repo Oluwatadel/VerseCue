@@ -1,4 +1,4 @@
-﻿<Window x:Class="Versecue.Wpf.VerseDisplayWindow"
+<Window x:Class="Versecue.Wpf.VerseDisplayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="VerseCue Display"
@@ -9,58 +9,47 @@
         WindowStartupLocation="CenterScreen"
         Background="#111111">
 
-    <Grid Margin="60">
+    <Grid Margin="50">
 
-        <ScrollViewer
-            VerticalScrollBarVisibility="Auto"
-            HorizontalScrollBarVisibility="Disabled">
+        <ItemsControl x:Name="VerseItemsControl">
 
-            <ItemsControl
-                x:Name="VerseItemsControl">
+            <ItemsControl.ItemTemplate>
 
-                <ItemsControl.ItemTemplate>
+                <DataTemplate>
 
-                    <DataTemplate>
+                    <Grid Height="{Binding DisplayHeight}">
 
-                        <Border
-                            Padding="10"
-                            Margin="0,0,0,40">
+                        <Viewbox
+                            Stretch="Uniform"
+                            StretchDirection="DownOnly"
+                            Margin="10,8">
 
-                            <StackPanel>
+                            <TextBlock
+                                Foreground="White"
+                                FontSize="42"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                MaxWidth="900">
 
-                                <!-- VERSE -->
+                                <Run Text="{Binding Verse.Text}"/>
+                                <Run Text=" ("/>
+                                <Run Text="{Binding Reference}"/>
+                                <Run Text=")"/>
 
-                                <TextBlock
-                                    TextWrapping="Wrap"
-                                    TextAlignment="Center"
-                                    HorizontalAlignment="Center"
-                                    Foreground="White"
-                                    FontSize="42"
-                                    FontWeight="SemiBold">
+                            </TextBlock>
 
-                                    <Run Text="{Binding Verse.Text}"/>
+                        </Viewbox>
 
-                                    <Run Text=" "/>
+                    </Grid>
 
-                                    <Run Text="("/>
+                </DataTemplate>
 
-                                    <Run Text="{Binding Reference}"/>
+            </ItemsControl.ItemTemplate>
 
-                                    <Run Text=")"/>
-
-                                </TextBlock>
-
-                            </StackPanel>
-
-                        </Border>
-
-                    </DataTemplate>
-
-                </ItemsControl.ItemTemplate>
-
-            </ItemsControl>
-
-        </ScrollViewer>
+        </ItemsControl>
 
     </Grid>
 
