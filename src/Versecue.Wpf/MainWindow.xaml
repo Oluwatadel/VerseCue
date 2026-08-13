@@ -25,7 +25,7 @@
 
 
         <!-- ===================================================== -->
-        <!-- HEADER -->
+        <!-- HEADER                                                -->
         <!-- ===================================================== -->
 
         <StackPanel Grid.Row="0">
@@ -45,7 +45,7 @@
 
 
         <!-- ===================================================== -->
-        <!-- INSTALLED BIBLE -->
+        <!-- INSTALLED BIBLE                                       -->
         <!-- ===================================================== -->
 
         <Border
@@ -61,6 +61,7 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+
 
                 <StackPanel Grid.Column="0">
 
@@ -83,6 +84,7 @@
 
                 </StackPanel>
 
+
                 <Button
                     Grid.Column="1"
                     Content="Import Bible"
@@ -97,7 +99,7 @@
 
 
         <!-- ===================================================== -->
-        <!-- STATISTICS -->
+        <!-- STATISTICS                                            -->
         <!-- ===================================================== -->
 
         <Grid Grid.Row="4">
@@ -113,7 +115,7 @@
             </Grid.ColumnDefinitions>
 
 
-            <!-- Translations -->
+            <!-- TRANSLATIONS -->
 
             <Border
                 Grid.Column="0"
@@ -140,7 +142,7 @@
             </Border>
 
 
-            <!-- Books -->
+            <!-- BOOKS -->
 
             <Border
                 Grid.Column="2"
@@ -167,7 +169,7 @@
             </Border>
 
 
-            <!-- Chapters -->
+            <!-- CHAPTERS -->
 
             <Border
                 Grid.Column="4"
@@ -194,7 +196,7 @@
             </Border>
 
 
-            <!-- Verses -->
+            <!-- VERSES -->
 
             <Border
                 Grid.Column="6"
@@ -224,7 +226,7 @@
 
 
         <!-- ===================================================== -->
-        <!-- BIBLE BROWSER -->
+        <!-- BIBLE BROWSER                                        -->
         <!-- ===================================================== -->
 
         <Border
@@ -242,11 +244,14 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="20"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="12"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="16"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
 
-                <!-- Browser title -->
+                <!-- BROWSER TITLE -->
 
                 <TextBlock
                     Grid.Row="0"
@@ -256,7 +261,7 @@
 
 
                 <!-- ================================================= -->
-                <!-- DROPDOWNS -->
+                <!-- TRANSLATION / BOOK / CHAPTER                     -->
                 <!-- ================================================= -->
 
                 <Grid Grid.Row="2">
@@ -270,7 +275,7 @@
                     </Grid.ColumnDefinitions>
 
 
-                    <!-- Translation -->
+                    <!-- TRANSLATION -->
 
                     <StackPanel Grid.Column="0">
 
@@ -282,13 +287,14 @@
                         <ComboBox
                             x:Name="TranslationComboBox"
                             Height="38"
+                            SelectedIndex="-1"
                             DisplayMemberPath="Name"
                             SelectionChanged="TranslationComboBox_SelectionChanged"/>
 
                     </StackPanel>
 
 
-                    <!-- Book -->
+                    <!-- BOOK -->
 
                     <StackPanel Grid.Column="2">
 
@@ -300,14 +306,15 @@
                         <ComboBox
                             x:Name="BookComboBox"
                             Height="38"
-                            DisplayMemberPath="Name"
+                            SelectedIndex="-1"
                             IsEnabled="False"
+                            DisplayMemberPath="Name"
                             SelectionChanged="BookComboBox_SelectionChanged"/>
 
                     </StackPanel>
 
 
-                    <!-- Chapter -->
+                    <!-- CHAPTER -->
 
                     <StackPanel Grid.Column="4">
 
@@ -319,8 +326,9 @@
                         <ComboBox
                             x:Name="ChapterComboBox"
                             Height="38"
-                            DisplayMemberPath="ChapterNumber"
+                            SelectedIndex="-1"
                             IsEnabled="False"
+                            DisplayMemberPath="ChapterNumber"
                             SelectionChanged="ChapterComboBox_SelectionChanged"/>
 
                     </StackPanel>
@@ -329,28 +337,47 @@
 
 
                 <!-- ================================================= -->
-                <!-- VERSE HEADER -->
+                <!-- VERSE HEADER                                     -->
                 <!-- ================================================= -->
 
-                <TextBlock
-                    Grid.Row="4"
-                    x:Name="VerseReferenceText"
-                    Text="Select a chapter to view verses"
-                    FontSize="18"
-                    FontWeight="SemiBold"/>
+                <Grid Grid.Row="4">
+
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+
+                    <TextBlock
+                        Grid.Column="0"
+                        x:Name="VerseReferenceText"
+                        Text="Select a chapter to view verses"
+                        FontSize="18"
+                        FontWeight="SemiBold"
+                        VerticalAlignment="Center"/>
+
+
+                    <TextBlock
+                        Grid.Column="1"
+                        Text="Select up to 3 verses"
+                        Foreground="Gray"
+                        VerticalAlignment="Center"/>
+
+                </Grid>
 
 
                 <!-- ================================================= -->
-                <!-- VERSE LIST -->
+                <!-- VERSE LIST                                       -->
                 <!-- ================================================= -->
 
                 <ListView
-                    Grid.Row="5"
+                    Grid.Row="6"
                     x:Name="VerseComboBox"
-                    Margin="0,12,0,0"
+                    SelectionMode="Multiple"
                     BorderBrush="#DDDDDD"
                     BorderThickness="1"
-                    ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    ScrollViewer.VerticalScrollBarVisibility="Auto"
+                    SelectionChanged="VerseComboBox_SelectionChanged">
 
                     <ListView.ItemTemplate>
 
@@ -369,7 +396,7 @@
                                     </Grid.ColumnDefinitions>
 
 
-                                    <!-- Verse number -->
+                                    <!-- VERSE NUMBER -->
 
                                     <TextBlock
                                         Grid.Column="0"
@@ -379,7 +406,7 @@
                                         Foreground="#666666"/>
 
 
-                                    <!-- Verse text -->
+                                    <!-- VERSE TEXT -->
 
                                     <TextBlock
                                         Grid.Column="1"
@@ -397,6 +424,19 @@
                     </ListView.ItemTemplate>
 
                 </ListView>
+
+
+                <!-- ================================================= -->
+                <!-- DISPLAY BUTTON                                   -->
+                <!-- ================================================= -->
+
+                <Button
+                    Grid.Row="8"
+                    Content="Display Selected Verse(s)"
+                    Width="220"
+                    Height="42"
+                    HorizontalAlignment="Right"
+                    Click="DisplayVerse_Click"/>
 
             </Grid>
 
