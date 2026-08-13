@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using Versecue.Application.Models.Bible;
 
@@ -12,10 +13,12 @@ public partial class VerseDisplayWindow : Window
         InitializeComponent();
     }
 
+    private sealed class VerseDisplayItem
+    {
+        public BibleVerseListItem Verse { get; init; } = null!;
 
-    // ============================================================
-    // SHOW VERSES
-    // ============================================================
+        public string Reference { get; init; } = string.Empty;
+    }
 
     public void ShowVerses(
         List<(BibleVerseListItem Verse, string Reference)> verses)
@@ -25,36 +28,25 @@ public partial class VerseDisplayWindow : Window
             return;
         }
 
-
-        // Maximum of three verses.
-
-        if (verses.Count > 3)
-        {
-            verses =
-                verses
-                    .GetRange(0, 3);
-        }
-
-
-        // Refresh the displayed collection.
+        var displayItems =
+            verses
+                .Take(3)
+                .Select(x => new VerseDisplayItem
+                {
+                    Verse = x.Verse,
+                    Reference = x.Reference
+                })
+                .ToList();
 
         VerseItemsControl.ItemsSource =
-            null;
-
-        VerseItemsControl.ItemsSource =
-            verses;
-
-
-        // Show the window if necessary.
+            displayItems;
 
         if (!IsVisible)
         {
             Show();
         }
 
-
         Activate();
-
         Focus();
     }
 }
