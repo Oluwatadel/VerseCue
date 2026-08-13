@@ -20,6 +20,13 @@ public partial class MainWindow : Window
 
     private VerseDisplayWindow? _verseDisplayWindow;
 
+    private sealed class SelectedVersePreviewItem
+    {
+        public string Reference { get; init; } = string.Empty;
+
+        public string Text { get; init; } = string.Empty;
+    }
+
 
     // ============================================================
     // CONSTRUCTOR
@@ -206,10 +213,10 @@ public partial class MainWindow : Window
                 $"DAPPER UI: Found {translations.Count} translations.");
 
 
-            TranslationComboBox.ItemsSource =
+            TranslationTabListBox.ItemsSource =
                 translations;
 
-            TranslationComboBox.SelectedIndex =
+            TranslationTabListBox.SelectedIndex =
                 -1;
 
 
@@ -237,10 +244,20 @@ public partial class MainWindow : Window
                 null;
 
             VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
 
 
             VerseReferenceText.Text =
                 "Select a chapter to view verses";
+
+            if (translations.Count > 0)
+            {
+                TranslationTabListBox.SelectedIndex =
+                    0;
+
+                await LoadBooksAsync(
+                    translations[0]);
+            }
         }
         catch (Exception ex)
         {
@@ -261,7 +278,7 @@ public partial class MainWindow : Window
     // TRANSLATION SELECTED
     // ============================================================
 
-    private async void TranslationComboBox_SelectionChanged(
+    private async void TranslationTabListBox_SelectionChanged(
         object sender,
         SelectionChangedEventArgs e)
     {
@@ -271,13 +288,26 @@ public partial class MainWindow : Window
         }
 
 
-        if (TranslationComboBox.SelectedItem
+        if (TranslationTabListBox.SelectedItem
             is not BibleTranslationListItem translation)
         {
             ResetBookAndChapter();
 
             return;
         }
+
+        var previousBookCanonicalOrder =
+            (BookComboBox.SelectedItem as BibleBookListItem)
+                ?.CanonicalOrder;
+
+        var previousChapterNumber =
+            (ChapterComboBox.SelectedItem as BibleChapterListItem)
+                ?.ChapterNumber;
+
+        var previousSelectedVerseNumbers =
+            GetSelectedVerseListItemsInDisplayOrder()
+                .Select(x => x.VerseNumber)
+                .ToList();
 
 
         Console.WriteLine(
@@ -287,6 +317,40 @@ public partial class MainWindow : Window
 
 
         await LoadBooksAsync(translation);
+
+        if (!previousBookCanonicalOrder.HasValue)
+        {
+            return;
+        }
+
+        var matchingBook =
+            BookComboBox.Items
+                .OfType<BibleBookListItem>()
+                .FirstOrDefault(x =>
+                    x.CanonicalOrder ==
+                    previousBookCanonicalOrder.Value);
+
+        if (matchingBook is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _loadingBrowser = true;
+
+            BookComboBox.SelectedItem =
+                matchingBook;
+        }
+        finally
+        {
+            _loadingBrowser = false;
+        }
+
+        await LoadChaptersAsync(
+            matchingBook,
+            previousChapterNumber,
+            previousSelectedVerseNumbers);
     }
 
 
@@ -344,6 +408,7 @@ public partial class MainWindow : Window
                 null;
 
             VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
 
 
             VerseReferenceText.Text =
@@ -395,6 +460,7 @@ public partial class MainWindow : Window
                 null;
 
             VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
 
 
             VerseReferenceText.Text =
@@ -404,60 +470,7 @@ public partial class MainWindow : Window
         }
 
 
-        try
-        {
-            _loadingBrowser = true;
-
-
-            Console.WriteLine(
-                $"DAPPER UI: Book selected: " +
-                $"{book.Name} Id={book.Id}");
-
-
-            var chapters =
-                await _bibleRepository
-                    .GetChaptersByBookAsync(
-                        book.Id);
-
-
-            Console.WriteLine(
-                $"DAPPER UI: Found {chapters.Count} chapters.");
-
-
-            ChapterComboBox.ItemsSource =
-                chapters;
-
-
-            // Do not automatically select Chapter 1.
-
-            ChapterComboBox.SelectedIndex =
-                -1;
-
-            ChapterComboBox.IsEnabled =
-                chapters.Count > 0;
-
-
-            VerseComboBox.ItemsSource =
-                null;
-
-            VerseComboBox.SelectedItems.Clear();
-
-
-            VerseReferenceText.Text =
-                "Select a chapter to view verses";
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                ex.ToString(),
-                "Load Chapters Failed",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        finally
-        {
-            _loadingBrowser = false;
-        }
+        await LoadChaptersAsync(book);
     }
 
 
@@ -482,6 +495,7 @@ public partial class MainWindow : Window
                 null;
 
             VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
 
 
             VerseReferenceText.Text =
@@ -491,63 +505,7 @@ public partial class MainWindow : Window
         }
 
 
-        try
-        {
-            Mouse.OverrideCursor =
-                Cursors.Wait;
-
-
-            Console.WriteLine(
-                $"DAPPER UI: Chapter selected: " +
-                $"Id={chapter.Id}");
-
-
-            var verses =
-                await _bibleRepository
-                    .GetVersesAsync(
-                        chapter.Id,
-                        CancellationToken.None);
-
-
-            Console.WriteLine(
-                $"DAPPER UI: Found {verses.Count} verses.");
-
-
-            VerseComboBox.ItemsSource =
-                verses;
-
-
-            VerseComboBox.SelectedItems.Clear();
-
-
-            VerseReferenceText.Text =
-                $"Verses — {verses.Count}";
-
-
-            VerseCountText.Text =
-                verses.Count.ToString();
-        }
-        catch (Exception ex)
-        {
-            VerseComboBox.ItemsSource =
-                null;
-
-
-            VerseReferenceText.Text =
-                "Unable to load verses";
-
-
-            MessageBox.Show(
-                ex.ToString(),
-                "Bible Browser",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        finally
-        {
-            Mouse.OverrideCursor =
-                null;
-        }
+        await LoadVersesAsync(chapter);
     }
 
 
@@ -561,6 +519,8 @@ public partial class MainWindow : Window
     {
         if (VerseComboBox.SelectedItems.Count <= 3)
         {
+            UpdateSelectedVersePreview();
+
             return;
         }
 
@@ -578,6 +538,8 @@ public partial class MainWindow : Window
             VerseComboBox.SelectedItems.Remove(
                 itemToRemove);
         }
+
+        UpdateSelectedVersePreview();
 
 
         MessageBox.Show(
@@ -635,14 +597,26 @@ public partial class MainWindow : Window
 
 
         var selectedVerses =
-            VerseComboBox.SelectedItems
-                .OfType<BibleVerseListItem>()
+            GetSelectedVerseListItemsInDisplayOrder()
                 .Take(3)
                 .ToList();
 
 
         var displayVerses =
-            new List<(BibleVerseListItem Verse, string Reference)>();
+            new List<VerseDisplayWindow.VerseDisplayRequest>();
+
+
+        if (TranslationTabListBox.SelectedItem
+            is not BibleTranslationListItem translation)
+        {
+            MessageBox.Show(
+                "Please select a translation.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
 
 
         foreach (var verse in selectedVerses)
@@ -652,7 +626,29 @@ public partial class MainWindow : Window
 
 
             displayVerses.Add(
-                (verse, reference));
+                new VerseDisplayWindow.VerseDisplayRequest
+                {
+                    TranslationId =
+                        translation.Id,
+
+                    TranslationCode =
+                        translation.Code,
+
+                    BookId =
+                        book.Id,
+
+                    BookName =
+                        book.Name,
+
+                    ChapterNumber =
+                        chapter.ChapterNumber,
+
+                    Verse =
+                        verse,
+
+                    Reference =
+                        reference
+                });
         }
 
 
@@ -662,7 +658,8 @@ public partial class MainWindow : Window
         if (_verseDisplayWindow == null)
         {
             _verseDisplayWindow =
-                new VerseDisplayWindow();
+                new VerseDisplayWindow(
+                    _bibleRepository);
 
             _verseDisplayWindow.Closed +=
                 VerseDisplayWindow_Closed;
@@ -671,6 +668,85 @@ public partial class MainWindow : Window
 
         _verseDisplayWindow.ShowVerses(
             displayVerses);
+
+        NextVerseButton.IsEnabled =
+            true;
+    }
+
+
+    // ============================================================
+    // NEXT VERSE
+    // ============================================================
+
+    private async void NextVerse_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var shouldEnableNext =
+            true;
+
+        if (_verseDisplayWindow is null)
+        {
+            NextVerseButton.IsEnabled =
+                false;
+
+            MessageBox.Show(
+                "Display a verse before using Next.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        try
+        {
+            NextVerseButton.IsEnabled =
+                false;
+
+            Mouse.OverrideCursor =
+                Cursors.Wait;
+
+            var displayedNextVerse =
+                await _verseDisplayWindow.DisplayNextVerseAsync(
+                    CancellationToken.None);
+
+            if (!displayedNextVerse)
+            {
+                shouldEnableNext =
+                    false;
+
+                MessageBox.Show(
+                    "There is no next verse available.",
+                    "VerseCue",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Next Verse Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            NextVerseButton.IsEnabled =
+                _verseDisplayWindow is not null;
+        }
+        finally
+        {
+            Mouse.OverrideCursor =
+                null;
+
+            if (_verseDisplayWindow is not null)
+            {
+                NextVerseButton.IsEnabled =
+                    shouldEnableNext;
+            }
+        }
     }
 
 
@@ -683,6 +759,9 @@ public partial class MainWindow : Window
         EventArgs e)
     {
         _verseDisplayWindow = null;
+
+        NextVerseButton.IsEnabled =
+            false;
     }
 
 
@@ -716,9 +795,223 @@ public partial class MainWindow : Window
             null;
 
         VerseComboBox.SelectedItems.Clear();
+        UpdateSelectedVersePreview();
 
 
         VerseReferenceText.Text =
             "Select a chapter to view verses";
+    }
+
+    private async Task LoadChaptersAsync(
+        BibleBookListItem book,
+        int? chapterNumberToSelect = null,
+        IReadOnlyCollection<int>? verseNumbersToSelect = null)
+    {
+        try
+        {
+            _loadingBrowser = true;
+
+
+            Console.WriteLine(
+                $"DAPPER UI: Book selected: " +
+                $"{book.Name} Id={book.Id}");
+
+
+            var chapters =
+                await _bibleRepository
+                    .GetChaptersByBookAsync(
+                        book.Id);
+
+
+            Console.WriteLine(
+                $"DAPPER UI: Found {chapters.Count} chapters.");
+
+
+            ChapterComboBox.ItemsSource =
+                chapters;
+
+
+            // Do not automatically select Chapter 1.
+
+            ChapterComboBox.SelectedIndex =
+                -1;
+
+            ChapterComboBox.IsEnabled =
+                chapters.Count > 0;
+
+
+            VerseComboBox.ItemsSource =
+                null;
+
+            VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
+
+
+            VerseReferenceText.Text =
+                "Select a chapter to view verses";
+
+            if (!chapterNumberToSelect.HasValue)
+            {
+                return;
+            }
+
+            var matchingChapter =
+                chapters.FirstOrDefault(x =>
+                    x.ChapterNumber ==
+                    chapterNumberToSelect.Value);
+
+            if (matchingChapter is null)
+            {
+                return;
+            }
+
+            ChapterComboBox.SelectedItem =
+                matchingChapter;
+
+            _loadingBrowser = false;
+
+            await LoadVersesAsync(
+                matchingChapter,
+                verseNumbersToSelect);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Load Chapters Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            _loadingBrowser = false;
+        }
+    }
+
+    private async Task LoadVersesAsync(
+        BibleChapterListItem chapter,
+        IReadOnlyCollection<int>? verseNumbersToSelect = null)
+    {
+        try
+        {
+            Mouse.OverrideCursor =
+                Cursors.Wait;
+
+
+            Console.WriteLine(
+                $"DAPPER UI: Chapter selected: " +
+                $"Id={chapter.Id}");
+
+
+            var verses =
+                await _bibleRepository
+                    .GetVersesAsync(
+                        chapter.Id,
+                        CancellationToken.None);
+
+
+            Console.WriteLine(
+                $"DAPPER UI: Found {verses.Count} verses.");
+
+
+            VerseComboBox.ItemsSource =
+                verses;
+
+
+            VerseComboBox.SelectedItems.Clear();
+
+            if (verseNumbersToSelect is not null)
+            {
+                foreach (var verse in verses
+                    .Where(x => verseNumbersToSelect.Contains(x.VerseNumber))
+                    .Take(3))
+                {
+                    VerseComboBox.SelectedItems.Add(
+                        verse);
+                }
+            }
+
+            UpdateSelectedVersePreview();
+
+
+            VerseReferenceText.Text =
+                $"Verses - {verses.Count}";
+
+
+            VerseCountText.Text =
+                verses.Count.ToString();
+        }
+        catch (Exception ex)
+        {
+            VerseComboBox.ItemsSource =
+                null;
+            VerseComboBox.SelectedItems.Clear();
+            UpdateSelectedVersePreview();
+
+
+            VerseReferenceText.Text =
+                "Unable to load verses";
+
+
+            MessageBox.Show(
+                ex.ToString(),
+                "Bible Browser",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor =
+                null;
+        }
+    }
+
+    private List<BibleVerseListItem> GetSelectedVerseListItemsInDisplayOrder()
+    {
+        var selected =
+            VerseComboBox.SelectedItems
+                .OfType<BibleVerseListItem>()
+                .ToHashSet();
+
+        return VerseComboBox.Items
+            .OfType<BibleVerseListItem>()
+            .Where(selected.Contains)
+            .ToList();
+    }
+
+    private void UpdateSelectedVersePreview()
+    {
+        if (BookComboBox.SelectedItem is not BibleBookListItem book ||
+            ChapterComboBox.SelectedItem is not BibleChapterListItem chapter)
+        {
+            SelectedVersePreviewItemsControl.ItemsSource =
+                null;
+
+            SelectedVersePreviewEmptyText.Visibility =
+                Visibility.Visible;
+
+            return;
+        }
+
+        var previewItems =
+            GetSelectedVerseListItemsInDisplayOrder()
+                .Take(3)
+                .Select(verse => new SelectedVersePreviewItem
+                {
+                    Reference =
+                        $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}",
+
+                    Text =
+                        verse.Text
+                })
+                .ToList();
+
+        SelectedVersePreviewItemsControl.ItemsSource =
+            previewItems;
+
+        SelectedVersePreviewEmptyText.Visibility =
+            previewItems.Count == 0
+                ? Visibility.Visible
+                : Visibility.Collapsed;
     }
 }

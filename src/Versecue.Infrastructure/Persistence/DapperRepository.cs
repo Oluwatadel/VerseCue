@@ -175,7 +175,7 @@ public sealed class DapperBibleRepository : IBibleRepository
             Guid bookId,
             CancellationToken cancellationToken = default)
     {
-           const string sql = """
+        const string sql = """
                 SELECT
                     Id,
                     BookId,
@@ -403,6 +403,172 @@ public sealed class DapperBibleRepository : IBibleRepository
     }
 
     // ============================================================
+    // NEXT VERSE
+    // ============================================================
+
+    public async Task<BibleVerseNavigationItem?>
+        GetNextVerseAsync(
+            Guid translationId,
+            Guid currentVerseId,
+            CancellationToken cancellationToken = default)
+    {
+        const string currentVerseSql = """
+            SELECT
+                b.CanonicalOrder,
+                c.ChapterNumber,
+                v.VerseNumber
+            FROM BibleVerses v
+
+            INNER JOIN BibleChapters c
+                ON c.Id = v.ChapterId
+
+            INNER JOIN BibleBooks b
+                ON b.Id = c.BookId
+
+            WHERE v.Id = @CurrentVerseId COLLATE NOCASE
+              AND b.TranslationId = @TranslationId COLLATE NOCASE
+
+            LIMIT 1;
+            """;
+
+        const string nextVerseSql = """
+            SELECT
+                t.Id AS TranslationId,
+                t.Code AS TranslationCode,
+                b.Id AS BookId,
+                b.Name AS BookName,
+                b.CanonicalOrder AS BookCanonicalOrder,
+                c.Id AS ChapterId,
+                c.ChapterNumber,
+                v.Id AS VerseId,
+                v.VerseNumber,
+                v.Text
+            FROM BibleVerses v
+
+            INNER JOIN BibleChapters c
+                ON c.Id = v.ChapterId
+
+            INNER JOIN BibleBooks b
+                ON b.Id = c.BookId
+
+            INNER JOIN BibleTranslations t
+                ON t.Id = b.TranslationId
+
+            WHERE t.Id = @TranslationId COLLATE NOCASE
+              AND
+              (
+                    b.CanonicalOrder > @CanonicalOrder
+                 OR (
+                        b.CanonicalOrder = @CanonicalOrder
+                    AND c.ChapterNumber > @ChapterNumber
+                    )
+                 OR (
+                        b.CanonicalOrder = @CanonicalOrder
+                    AND c.ChapterNumber = @ChapterNumber
+                    AND v.VerseNumber > @VerseNumber
+                    )
+              )
+
+            ORDER BY
+                b.CanonicalOrder,
+                c.ChapterNumber,
+                v.VerseNumber
+
+            LIMIT 1;
+            """;
+
+        await using var connection = CreateConnection();
+
+        await connection.OpenAsync(cancellationToken);
+
+        var currentVerse =
+            await connection.QueryFirstOrDefaultAsync<CurrentVerseRow>(
+                new CommandDefinition(
+                    currentVerseSql,
+                    new
+                    {
+                        TranslationId =
+                            translationId.ToString("D"),
+
+                        CurrentVerseId =
+                            currentVerseId.ToString("D")
+                    },
+                    commandTimeout: 5,
+                    cancellationToken: cancellationToken));
+
+        if (currentVerse is null)
+        {
+            return null;
+        }
+
+        var row =
+            await connection.QueryFirstOrDefaultAsync<NextVerseRow>(
+                new CommandDefinition(
+                    nextVerseSql,
+                    new
+                    {
+                        TranslationId =
+                            translationId.ToString("D"),
+
+                        CanonicalOrder =
+                            currentVerse.CanonicalOrder,
+
+                        ChapterNumber =
+                            currentVerse.ChapterNumber,
+
+                        VerseNumber =
+                            currentVerse.VerseNumber
+                    },
+                    commandTimeout: 5,
+                    cancellationToken: cancellationToken));
+
+        if (row is null)
+        {
+            return null;
+        }
+
+        return new BibleVerseNavigationItem
+        {
+            TranslationId =
+                Guid.Parse(row.TranslationId),
+
+            TranslationCode =
+                row.TranslationCode,
+
+            BookId =
+                Guid.Parse(row.BookId),
+
+            BookName =
+                row.BookName,
+
+            BookCanonicalOrder =
+                row.BookCanonicalOrder,
+
+            ChapterId =
+                Guid.Parse(row.ChapterId),
+
+            ChapterNumber =
+                row.ChapterNumber,
+
+            Verse =
+                new BibleVerseListItem
+                {
+                    Id =
+                        Guid.Parse(row.VerseId),
+
+                    ChapterId =
+                        Guid.Parse(row.ChapterId),
+
+                    VerseNumber =
+                        row.VerseNumber,
+
+                    Text =
+                        row.Text
+                }
+        };
+    }
+
+    // ============================================================
     // INTERNAL DAPPER ROW TYPES
     // ============================================================
 
@@ -468,13 +634,45 @@ public sealed class DapperBibleRepository : IBibleRepository
     }
 
     private sealed class BibleVerseDbRow
-{
-    public string Id { get; set; } = string.Empty;
+    {
+        public string Id { get; set; } = string.Empty;
 
-    public string ChapterId { get; set; } = string.Empty;
+        public string ChapterId { get; set; } = string.Empty;
 
-    public int VerseNumber { get; set; }
+        public int VerseNumber { get; set; }
 
-    public string Text { get; set; } = string.Empty;
-}
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class NextVerseRow
+    {
+        public string TranslationId { get; set; } = string.Empty;
+
+        public string TranslationCode { get; set; } = string.Empty;
+
+        public string BookId { get; set; } = string.Empty;
+
+        public string BookName { get; set; } = string.Empty;
+
+        public int BookCanonicalOrder { get; set; }
+
+        public string ChapterId { get; set; } = string.Empty;
+
+        public int ChapterNumber { get; set; }
+
+        public string VerseId { get; set; } = string.Empty;
+
+        public int VerseNumber { get; set; }
+
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class CurrentVerseRow
+    {
+        public int CanonicalOrder { get; set; }
+
+        public int ChapterNumber { get; set; }
+
+        public int VerseNumber { get; set; }
+    }
 }

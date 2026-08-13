@@ -31,4 +31,10 @@ public interface IBibleRepository
             int verseStart,
             int? verseEnd = null,
             CancellationToken cancellationToken = default);
+
+    Task<BibleVerseNavigationItem?>
+        GetNextVerseAsync(
+            Guid translationId,
+            Guid currentVerseId,
+            CancellationToken cancellationToken = default);
 }
