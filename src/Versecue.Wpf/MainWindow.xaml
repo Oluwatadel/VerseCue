@@ -53,7 +53,7 @@
         </Style>
     </Window.Resources>
 
-    <Grid>
+    <Grid x:Name="RootGrid">
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="240"/>
@@ -87,33 +87,69 @@
                 <StackPanel
                     Grid.Row="0">
 
-                    <TextBlock
-                        Text="VerseCue"
-                        FontSize="26"
-                        FontWeight="Bold"/>
+                    <Grid>
 
-                    <TextBlock
-                        Text="Right verse. Right time."
-                        Foreground="{StaticResource TextMutedBrush}"
-                        FontSize="11"
-                        Margin="0,4,0,0"/>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="46"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border
+                            Grid.Column="0"
+                            Width="46"
+                            Height="46"
+                            Background="#0B1A2D"
+                            BorderBrush="#263D5F"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            ClipToBounds="True">
+
+                            <Image
+                                Source="Assets/vercue_logo.png"
+                                Stretch="Uniform"
+                                Margin="4"/>
+
+                        </Border>
+
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center">
+
+                            <TextBlock
+                                Text="VerseCue"
+                                FontSize="24"
+                                FontWeight="Bold"/>
+
+                            <TextBlock
+                                Text="Right verse. Right time."
+                                Foreground="{StaticResource TextMutedBrush}"
+                                FontSize="11"
+                                Margin="0,4,0,0"/>
+
+                        </StackPanel>
+
+                    </Grid>
+
 
                 </StackPanel>
 
                 <StackPanel
                     Grid.Row="2">
 
-                    <Border
+                    <Button
+                        x:Name="DashboardNavButton"
                         Background="#1D4ED8"
-                        CornerRadius="6"
                         Padding="14,12"
-                        Margin="0,0,0,8">
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="DashboardNavButton_Click">
 
                         <TextBlock
                             Text="Dashboard"
                             FontSize="15"/>
 
-                    </Border>
+                    </Button>
 
                     <TextBlock
                         Text="Live Transcription"
@@ -130,27 +166,32 @@
                         Foreground="{StaticResource TextMutedBrush}"
                         Margin="14,18,0,0"/>
 
-                    <Border
+                    <Button
+                        x:Name="ManualProjectionNavButton"
                         Background="#7C3AED"
-                        CornerRadius="6"
                         Padding="14,12"
-                        Margin="0,18,0,0">
+                        Margin="0,18,0,0"
+                        HorizontalContentAlignment="Left"
+                        Click="ManualProjectionNavButton_Click">
 
                         <TextBlock
                             Text="Manual Projection"
                             FontSize="15"/>
 
-                    </Border>
+                    </Button>
 
                     <TextBlock
                         Text="Presentations"
                         Foreground="{StaticResource TextMutedBrush}"
                         Margin="14,18,0,0"/>
 
-                    <TextBlock
-                        Text="Settings"
-                        Foreground="{StaticResource TextMutedBrush}"
-                        Margin="14,18,0,0"/>
+                    <Button
+                        x:Name="SettingsNavButton"
+                        Content="Settings"
+                        Margin="0,18,0,0"
+                        Padding="14,12"
+                        HorizontalContentAlignment="Left"
+                        Click="SettingsNavButton_Click"/>
 
                 </StackPanel>
 
@@ -205,12 +246,13 @@
                         FontSize="11"
                         HorizontalAlignment="Center"/>
 
-                    <TextBlock
-                        Text="Airis"
-                        FontSize="28"
-                        FontWeight="SemiBold"
+                    <Image
+                        Source="Assets/Airis_logo.png"
+                        Width="96"
+                        Height="42"
+                        Stretch="Uniform"
                         HorizontalAlignment="Center"
-                        Margin="0,4,0,0"/>
+                        Margin="0,6,0,0"/>
 
                 </StackPanel>
 
@@ -236,6 +278,7 @@
             <!-- HEADER -->
 
             <Border
+                x:Name="HeaderBorder"
                 Grid.Row="0"
                 Background="#5529D8"
                 Padding="22,16">
@@ -250,26 +293,19 @@
                     <StackPanel>
 
                         <TextBlock
+                            x:Name="HeaderTitleText"
                             Text="Manual Projection"
                             FontSize="24"
                             FontWeight="Bold"/>
 
                         <TextBlock
+                            x:Name="HeaderSubtitleText"
                             Text="Select, preview and display Bible verses manually."
                             Foreground="#E9D5FF"
                             FontSize="14"
                             Margin="0,6,0,0"/>
 
                     </StackPanel>
-
-                    <Button
-                        Grid.Column="1"
-                        Content="Import Bible"
-                        MinWidth="118"
-                        Height="38"
-                        Background="#4C1D95"
-                        BorderBrush="#8B5CF6"
-                        Click="ImportBible_Click"/>
 
                 </Grid>
 
@@ -279,6 +315,7 @@
             <!-- WORK AREA -->
 
             <Grid
+                x:Name="ManualProjectionView"
                 Grid.Row="1"
                 Margin="18,14">
 
@@ -498,6 +535,12 @@
 
                         <Grid>
 
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="14"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="Auto"/>
@@ -687,11 +730,26 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="10"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <Button
                                 Grid.Column="0"
+                                x:Name="LiveProjectionButton"
+                                Content="Go Live"
+                                MinWidth="96"
+                                Height="46"
+                                Background="#16A34A"
+                                BorderBrush="#22C55E"
+                                FontWeight="SemiBold"
+                                Click="LiveProjection_Click"/>
+
+                            <Button
+                                Grid.Column="2"
                                 x:Name="NextVerseButton"
                                 Content="Next"
                                 MinWidth="90"
@@ -700,8 +758,18 @@
                                 Click="NextVerse_Click"/>
 
                             <Button
-                                Grid.Column="2"
-                                Content="Display / Project Verse"
+                                Grid.Column="4"
+                                x:Name="ClearProjectionButton"
+                                Content="Clear"
+                                MinWidth="90"
+                                Height="46"
+                                IsEnabled="False"
+                                Click="ClearProjection_Click"/>
+
+                            <Button
+                                Grid.Column="6"
+                                x:Name="DisplayVerseButton"
+                                Content="Display Selected Verse(s)"
                                 Height="46"
                                 Background="#7C3AED"
                                 BorderBrush="#A855F7"
@@ -719,7 +787,350 @@
 
             <!-- METRICS -->
 
+            <ScrollViewer
+                x:Name="SettingsView"
+                Grid.Row="1"
+                Margin="18,14"
+                Visibility="Collapsed"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel>
+
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+
+                                <TextBlock
+                                    Text="Bible Library"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+
+                                <TextBlock
+                                    Text="Import XML or JSON Bible files into VerseCue."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+
+                            </StackPanel>
+
+                            <Button
+                                Grid.Column="1"
+                                Content="Import Bible"
+                                MinWidth="126"
+                                Height="42"
+                                Background="#7C3AED"
+                                BorderBrush="#A855F7"
+                                Click="ImportBible_Click"/>
+
+                            <Grid
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2">
+
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="12"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ListBox
+                                    Grid.Column="0"
+                                    x:Name="BibleManagementListBox"
+                                    Height="128"
+                                    DisplayMemberPath="DisplayName"
+                                    SelectionChanged="BibleManagementListBox_SelectionChanged"/>
+
+                                <StackPanel
+                                    Grid.Column="2"
+                                    Width="150">
+
+                                    <Button
+                                        x:Name="DeleteBibleButton"
+                                        Content="Delete Bible"
+                                        Height="38"
+                                        IsEnabled="False"
+                                        Click="DeleteBible_Click"/>
+
+                                    <TextBlock
+                                        x:Name="BibleManagementStatusText"
+                                        Text="No Bible selected"
+                                        Foreground="{StaticResource TextMutedBrush}"
+                                        TextWrapping="Wrap"
+                                        FontSize="12"
+                                        Margin="0,10,0,0"/>
+
+                                </StackPanel>
+
+                            </Grid>
+
+                        </Grid>
+
+                    </Border>
+
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+
+                                <TextBlock
+                                    Text="Dashboard Theme"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+
+                                <TextBlock
+                                    Text="Applies immediately."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+
+                            </StackPanel>
+
+                            <ComboBox
+                                Grid.Column="2"
+                                x:Name="DashboardThemeComboBox"
+                                Height="36"
+                                SelectionChanged="DashboardThemeComboBox_SelectionChanged">
+
+                                <ComboBoxItem Content="VerseCue Dark"/>
+                                <ComboBoxItem Content="Midnight Blue"/>
+                                <ComboBoxItem Content="Clean Light"/>
+
+                            </ComboBox>
+
+                        </Grid>
+
+                    </Border>
+
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+
+                                <TextBlock
+                                    Text="Screensaver"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+
+                                <TextBlock
+                                    Text="Shown while Live is clear."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+
+                                <ComboBox
+                                    x:Name="ScreensaverComboBox"
+                                    Height="36"
+                                    DisplayMemberPath="Name"
+                                    SelectionChanged="ScreensaverComboBox_SelectionChanged"/>
+
+                                <Grid Margin="0,12,0,0">
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button
+                                        Grid.Column="0"
+                                        Content="Import Screensaver"
+                                        MinWidth="158"
+                                        Height="38"
+                                        Click="ImportScreensaver_Click"/>
+
+                                    <TextBox
+                                        Grid.Column="2"
+                                        x:Name="ScreensaverNameTextBox"
+                                        Height="38"
+                                        VerticalContentAlignment="Center"
+                                        IsEnabled="False"/>
+
+                                    <Button
+                                        Grid.Column="4"
+                                        x:Name="RenameScreensaverButton"
+                                        Content="Rename"
+                                        MinWidth="86"
+                                        Height="38"
+                                        IsEnabled="False"
+                                        Click="RenameScreensaver_Click"/>
+
+                                    <Button
+                                        Grid.Column="6"
+                                        x:Name="DeleteScreensaverButton"
+                                        Content="Delete"
+                                        MinWidth="80"
+                                        Height="38"
+                                        IsEnabled="False"
+                                        Click="DeleteScreensaver_Click"/>
+
+                                    <TextBlock
+                                        Grid.Column="8"
+                                        x:Name="ScreensaverPathText"
+                                        Text="Image, GIF or video"
+                                        Foreground="{StaticResource TextMutedBrush}"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"/>
+
+                                </Grid>
+
+                            </StackPanel>
+
+                        </Grid>
+
+                    </Border>
+
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18">
+
+                        <Grid>
+
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel>
+
+                                <TextBlock
+                                    Text="Verse Display"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+
+                                <TextBlock
+                                    Text="Choose the projector wallpaper."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+
+                                <ComboBox
+                                    x:Name="WallpaperComboBox"
+                                    Height="36"
+                                    DisplayMemberPath="Name"
+                                    SelectionChanged="WallpaperComboBox_SelectionChanged">
+
+                                </ComboBox>
+
+                                <Grid Margin="0,12,0,0">
+
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="220"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="10"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button
+                                        Grid.Column="0"
+                                        Content="Import Wallpaper"
+                                        MinWidth="144"
+                                        Height="38"
+                                        Click="ImportWallpaper_Click"/>
+
+                                    <TextBox
+                                        Grid.Column="2"
+                                        x:Name="WallpaperNameTextBox"
+                                        Height="38"
+                                        VerticalContentAlignment="Center"
+                                        IsEnabled="False"/>
+
+                                    <Button
+                                        Grid.Column="4"
+                                        x:Name="RenameWallpaperButton"
+                                        Content="Rename"
+                                        MinWidth="86"
+                                        Height="38"
+                                        IsEnabled="False"
+                                        Click="RenameWallpaper_Click"/>
+
+                                    <Button
+                                        Grid.Column="6"
+                                        x:Name="DeleteWallpaperButton"
+                                        Content="Delete"
+                                        MinWidth="80"
+                                        Height="38"
+                                        IsEnabled="False"
+                                        Click="DeleteWallpaper_Click"/>
+
+                                    <TextBlock
+                                        Grid.Column="8"
+                                        x:Name="WallpaperPathText"
+                                        Text="JPEG or PNG"
+                                        Foreground="{StaticResource TextMutedBrush}"
+                                        VerticalAlignment="Center"
+                                        TextTrimming="CharacterEllipsis"/>
+
+                                </Grid>
+
+                            </StackPanel>
+
+                        </Grid>
+
+                    </Border>
+
+                </StackPanel>
+
+            </ScrollViewer>
+
             <Grid
+                x:Name="MetricsView"
                 Grid.Row="2"
                 Margin="18,0">
 

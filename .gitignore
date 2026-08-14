@@ -471,3 +471,11 @@ ggml-*.bin
 # Archives
 *.zip
 
+# Aider
+.aider*
+.aider.chat.history.md
+.aider.input.history
+.aider.llm.history
+.aider.tags.cache.v3
+.aider.conf.yml
+/aider-env

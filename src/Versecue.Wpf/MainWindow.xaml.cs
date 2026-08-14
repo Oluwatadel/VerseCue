@@ -1,11 +1,15 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Versecue.Application.Interfaces;
 using Versecue.Application.Interfaces.Repository;
 using Versecue.Application.Models.Bible;
+using Versecue.Infrastructure.Common;
 using Versecue.Infrastructure.Persistence;
 
 namespace Versecue.Wpf;
@@ -17,14 +21,155 @@ public partial class MainWindow : Window
     private readonly IBibleRepository _bibleRepository;
 
     private bool _loadingBrowser;
+    private bool _loadingSettings;
 
     private VerseDisplayWindow? _verseDisplayWindow;
+    private DashboardSettings _settings = new();
+    private ProjectionMode _projectionMode = ProjectionMode.Offline;
+    private ProjectionContent _projectionContent = ProjectionContent.Screensaver;
+    private bool _canDisplayNextVerse;
+
+    private static readonly string SettingsFilePath =
+        Path.Combine(
+            ApplicationPaths.Settings,
+            "dashboard-settings.json");
+
+    private static readonly string WallpaperImportDirectory =
+        Path.Combine(
+            ApplicationPaths.Settings,
+            "Wallpapers");
+
+    private static readonly string ScreensaverImportDirectory =
+        Path.Combine(
+            ApplicationPaths.Settings,
+            "Screensavers");
+
+    private static readonly IReadOnlyList<WallpaperOption> BuiltInWallpapers =
+    [
+        new WallpaperOption
+        {
+            Id = "builtin:classic-black",
+            Name = "Classic Black"
+        },
+        new WallpaperOption
+        {
+            Id = "builtin:deep-ocean",
+            Name = "Deep Ocean"
+        },
+        new WallpaperOption
+        {
+            Id = "builtin:warm-chapel",
+            Name = "Warm Chapel"
+        },
+        new WallpaperOption
+        {
+            Id = "builtin:forest-dawn",
+            Name = "Forest Dawn"
+        }
+    ];
+
+    private static readonly IReadOnlyList<ScreensaverOption> BuiltInScreensavers =
+    [
+        new ScreensaverOption
+        {
+            Id = "builtin:versecue-default",
+            Name = "VerseCue Default",
+            MediaKind = "default"
+        }
+    ];
 
     private sealed class SelectedVersePreviewItem
     {
         public string Reference { get; init; } = string.Empty;
 
         public string Text { get; init; } = string.Empty;
+    }
+
+    private sealed class BibleManagementItem
+    {
+        public Guid Id { get; init; }
+
+        public string Code { get; init; } = string.Empty;
+
+        public string Name { get; init; } = string.Empty;
+
+        public string Language { get; init; } = string.Empty;
+
+        public string DisplayName =>
+            $"{Name} ({Code}) - {Language}";
+    }
+
+    private sealed class DashboardSettings
+    {
+        public string DashboardTheme { get; set; } = "VerseCue Dark";
+
+        public string VerseDisplayWallpaper { get; set; } = "Classic Black";
+
+        public string ImportedWallpaperPath { get; set; } = string.Empty;
+
+        public string SelectedWallpaperId { get; set; } = "builtin:classic-black";
+
+        public List<ImportedWallpaperSetting> ImportedWallpapers { get; set; } = [];
+
+        public string SelectedScreensaverId { get; set; } = "builtin:versecue-default";
+
+        public List<ImportedScreensaverSetting> ImportedScreensavers { get; set; } = [];
+    }
+
+    private sealed class ImportedWallpaperSetting
+    {
+        public string Id { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public string FilePath { get; set; } = string.Empty;
+    }
+
+    private sealed class WallpaperOption
+    {
+        public string Id { get; init; } = string.Empty;
+
+        public string Name { get; init; } = string.Empty;
+
+        public string FilePath { get; init; } = string.Empty;
+
+        public bool IsImported { get; init; }
+    }
+
+    private sealed class ImportedScreensaverSetting
+    {
+        public string Id { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public string FilePath { get; set; } = string.Empty;
+
+        public string MediaKind { get; set; } = string.Empty;
+    }
+
+    private sealed class ScreensaverOption
+    {
+        public string Id { get; init; } = string.Empty;
+
+        public string Name { get; init; } = string.Empty;
+
+        public string FilePath { get; init; } = string.Empty;
+
+        public string MediaKind { get; init; } = string.Empty;
+
+        public bool IsImported { get; init; }
+    }
+
+    private enum ProjectionMode
+    {
+        Offline,
+        Live
+    }
+
+    private enum ProjectionContent
+    {
+        Screensaver,
+        Verse
     }
 
 
@@ -55,7 +200,14 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        LoadDashboardSettings();
+        ApplyDashboardSettingsToControls();
+        ApplyDashboardTheme();
+        ShowManualProjectionView();
+        UpdateProjectionControls();
+
         await RefreshBibleStatusAsync();
+        await RefreshBibleManagementAsync();
 
         await LoadTranslationsAsync();
     }
@@ -80,7 +232,7 @@ public partial class MainWindow : Window
                 "All files (*.*)|*.*",
 
             CheckFileExists = true,
-            Multiselect = false
+            Multiselect = true
         };
 
         if (dialog.ShowDialog() != true)
@@ -92,19 +244,33 @@ public partial class MainWindow : Window
         {
             Mouse.OverrideCursor = Cursors.Wait;
 
-            await _bibleImportService.ImportAsync(
-                dialog.FileName,
-                CancellationToken.None);
+            var failedImports =
+                new List<string>();
+
+            foreach (var fileName in dialog.FileNames)
+            {
+                try
+                {
+                    await _bibleImportService.ImportAsync(
+                        fileName,
+                        CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    failedImports.Add(
+                        $"{Path.GetFileName(fileName)}: {ex.Message}");
+                }
+            }
 
             await RefreshBibleStatusAsync();
+            await RefreshBibleManagementAsync();
 
             await LoadTranslationsAsync();
 
-            MessageBox.Show(
-                "Bible import completed successfully.",
+            ShowImportSummary(
                 "Bible Import",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+                dialog.FileNames.Length,
+                failedImports);
         }
         catch (Exception ex)
         {
@@ -120,10 +286,1496 @@ public partial class MainWindow : Window
         }
     }
 
+    private void BibleManagementListBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        var hasSelection =
+            BibleManagementListBox.SelectedItem is BibleManagementItem;
+
+        DeleteBibleButton.IsEnabled =
+            hasSelection;
+
+        BibleManagementStatusText.Text =
+            hasSelection
+                ? "Selected Bible can be deleted."
+                : "No Bible selected";
+    }
+
+    private async void DeleteBible_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (BibleManagementListBox.SelectedItem is not BibleManagementItem item)
+        {
+            return;
+        }
+
+        var result =
+            MessageBox.Show(
+                $"Delete {item.Name} ({item.Code}) and all its books, chapters and verses?",
+                "Delete Bible",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            Mouse.OverrideCursor =
+                Cursors.Wait;
+
+            var translation =
+                await _db.BibleTranslations
+                    .FirstOrDefaultAsync(x =>
+                        x.Id == item.Id);
+
+            if (translation is null)
+            {
+                MessageBox.Show(
+                    "The selected Bible no longer exists.",
+                    "Delete Bible",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                await RefreshBibleManagementAsync();
+
+                return;
+            }
+
+            _db.BibleTranslations.Remove(
+                translation);
+
+            await _db.SaveChangesAsync();
+
+            ResetBookAndChapter();
+
+            await RefreshBibleStatusAsync();
+            await RefreshBibleManagementAsync();
+            await LoadTranslationsAsync();
+
+            MessageBox.Show(
+                "Bible deleted successfully.",
+                "Delete Bible",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Delete Bible Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor =
+                null;
+        }
+    }
+
+
+    // ============================================================
+    // SETTINGS VIEW
+    // ============================================================
+
+    private void DashboardNavButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowManualProjectionView();
+    }
+
+    private void ManualProjectionNavButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowManualProjectionView();
+    }
+
+    private void SettingsNavButton_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        ShowSettingsView();
+    }
+
+    private void ShowManualProjectionView()
+    {
+        ManualProjectionView.Visibility =
+            Visibility.Visible;
+
+        MetricsView.Visibility =
+            Visibility.Visible;
+
+        SettingsView.Visibility =
+            Visibility.Collapsed;
+
+        HeaderTitleText.Text =
+            "Manual Projection";
+
+        HeaderSubtitleText.Text =
+            "Select, preview and display Bible verses manually.";
+    }
+
+    private void ShowSettingsView()
+    {
+        ManualProjectionView.Visibility =
+            Visibility.Collapsed;
+
+        MetricsView.Visibility =
+            Visibility.Visible;
+
+        SettingsView.Visibility =
+            Visibility.Visible;
+
+        HeaderTitleText.Text =
+            "Settings";
+
+        HeaderSubtitleText.Text =
+            "Manage Bible imports, dashboard theme and projector wallpaper.";
+    }
+
+    private void DashboardThemeComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings)
+        {
+            return;
+        }
+
+        _settings.DashboardTheme =
+            GetSelectedComboBoxText(
+                DashboardThemeComboBox,
+                _settings.DashboardTheme);
+
+        ApplyDashboardTheme();
+        SaveDashboardSettings();
+    }
+
+    private void WallpaperComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings)
+        {
+            return;
+        }
+
+        if (WallpaperComboBox.SelectedItem is not WallpaperOption wallpaper)
+        {
+            return;
+        }
+
+        _settings.SelectedWallpaperId =
+            wallpaper.Id;
+
+        _settings.VerseDisplayWallpaper =
+            wallpaper.Name;
+
+        _settings.ImportedWallpaperPath =
+            wallpaper.FilePath;
+
+        UpdateWallpaperPathText();
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void ImportWallpaper_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select Verse Display Wallpaper",
+            Filter =
+                "Image files (*.jpg;*.jpeg;*.png)|*.jpg;*.jpeg;*.png|" +
+                "JPEG files (*.jpg;*.jpeg)|*.jpg;*.jpeg|" +
+                "PNG files (*.png)|*.png",
+            CheckFileExists = true,
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(
+                WallpaperImportDirectory);
+
+            var failedImports =
+                new List<string>();
+
+            foreach (var fileName in dialog.FileNames)
+            {
+                try
+                {
+                    var extension =
+                        Path.GetExtension(fileName)
+                            .ToLowerInvariant();
+
+                    if (extension is not ".jpg" and not ".jpeg" and not ".png")
+                    {
+                        failedImports.Add(
+                            $"{Path.GetFileName(fileName)}: unsupported image type");
+
+                        continue;
+                    }
+
+                    var wallpaperId =
+                        $"imported:{Guid.NewGuid():N}";
+
+                    var destinationPath =
+                        Path.Combine(
+                            WallpaperImportDirectory,
+                            $"{wallpaperId.Replace(':', '-')}{extension}");
+
+                    File.Copy(
+                        fileName,
+                        destinationPath,
+                        overwrite: true);
+
+                    _settings.ImportedWallpapers.Add(
+                        new ImportedWallpaperSetting
+                        {
+                            Id =
+                                wallpaperId,
+
+                            Name =
+                                GetUniqueWallpaperName(
+                                    Path.GetFileNameWithoutExtension(fileName)),
+
+                            FilePath =
+                                destinationPath
+                        });
+
+                    _settings.SelectedWallpaperId =
+                        wallpaperId;
+                }
+                catch (Exception ex)
+                {
+                    failedImports.Add(
+                        $"{Path.GetFileName(fileName)}: {ex.Message}");
+                }
+            }
+
+            ApplyDashboardSettingsToControls();
+            SaveDashboardSettings();
+            ApplySettingsToOpenDisplayWindow();
+
+            ShowImportSummary(
+                "Wallpaper Import",
+                dialog.FileNames.Length,
+                failedImports);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Wallpaper Import Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void RenameWallpaper_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var wallpaper =
+            GetSelectedWallpaperOption();
+
+        if (wallpaper is null || !wallpaper.IsImported)
+        {
+            return;
+        }
+
+        var importedWallpaper =
+            _settings.ImportedWallpapers
+                .FirstOrDefault(x => x.Id == wallpaper.Id);
+
+        if (importedWallpaper is null)
+        {
+            return;
+        }
+
+        var newName =
+            WallpaperNameTextBox.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            MessageBox.Show(
+                "Wallpaper name is required.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        if (BuiltInWallpapers.Any(x =>
+                string.Equals(
+                    x.Name,
+                    newName,
+                    StringComparison.OrdinalIgnoreCase)) ||
+            _settings.ImportedWallpapers.Any(x =>
+                x.Id != importedWallpaper.Id &&
+                string.Equals(
+                    x.Name,
+                    newName,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show(
+                "A wallpaper with that name already exists.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        importedWallpaper.Name =
+            newName;
+
+        _settings.VerseDisplayWallpaper =
+            newName;
+
+        SaveDashboardSettings();
+        ApplyDashboardSettingsToControls();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void DeleteWallpaper_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var wallpaper =
+            GetSelectedWallpaperOption();
+
+        if (wallpaper is null || !wallpaper.IsImported)
+        {
+            return;
+        }
+
+        var result =
+            MessageBox.Show(
+                $"Delete '{wallpaper.Name}' from imported wallpapers?",
+                "Delete Wallpaper",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        _settings.ImportedWallpapers.RemoveAll(x =>
+            x.Id == wallpaper.Id);
+
+        if (File.Exists(wallpaper.FilePath))
+        {
+            try
+            {
+                File.Delete(
+                    wallpaper.FilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Wallpaper File Delete Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        _settings.SelectedWallpaperId =
+            "builtin:classic-black";
+
+        _settings.VerseDisplayWallpaper =
+            "Classic Black";
+
+        _settings.ImportedWallpaperPath =
+            string.Empty;
+
+        SaveDashboardSettings();
+        ApplyDashboardSettingsToControls();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void ScreensaverComboBox_SelectionChanged(
+        object sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings)
+        {
+            return;
+        }
+
+        if (ScreensaverComboBox.SelectedItem is not ScreensaverOption screensaver)
+        {
+            return;
+        }
+
+        _settings.SelectedScreensaverId =
+            screensaver.Id;
+
+        UpdateScreensaverPathText();
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void ImportScreensaver_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Select Projection Screensaver",
+            Filter =
+                "Screensaver files (*.jpg;*.jpeg;*.png;*.gif;*.mp4;*.wmv;*.avi;*.mov)|*.jpg;*.jpeg;*.png;*.gif;*.mp4;*.wmv;*.avi;*.mov|" +
+                "Image files (*.jpg;*.jpeg;*.png;*.gif)|*.jpg;*.jpeg;*.png;*.gif|" +
+                "Video files (*.mp4;*.wmv;*.avi;*.mov)|*.mp4;*.wmv;*.avi;*.mov",
+            CheckFileExists = true,
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            Directory.CreateDirectory(
+                ScreensaverImportDirectory);
+
+            var failedImports =
+                new List<string>();
+
+            foreach (var fileName in dialog.FileNames)
+            {
+                try
+                {
+                    var extension =
+                        Path.GetExtension(fileName)
+                            .ToLowerInvariant();
+
+                    var mediaKind =
+                        GetScreensaverMediaKind(extension);
+
+                    if (mediaKind is null)
+                    {
+                        failedImports.Add(
+                            $"{Path.GetFileName(fileName)}: unsupported screensaver type");
+
+                        continue;
+                    }
+
+                    var screensaverId =
+                        $"screensaver:{Guid.NewGuid():N}";
+
+                    var destinationPath =
+                        Path.Combine(
+                            ScreensaverImportDirectory,
+                            $"{screensaverId.Replace(':', '-')}{extension}");
+
+                    File.Copy(
+                        fileName,
+                        destinationPath,
+                        overwrite: true);
+
+                    _settings.ImportedScreensavers.Add(
+                        new ImportedScreensaverSetting
+                        {
+                            Id =
+                                screensaverId,
+
+                            Name =
+                                GetUniqueScreensaverName(
+                                    Path.GetFileNameWithoutExtension(fileName)),
+
+                            FilePath =
+                                destinationPath,
+
+                            MediaKind =
+                                mediaKind
+                        });
+
+                    _settings.SelectedScreensaverId =
+                        screensaverId;
+                }
+                catch (Exception ex)
+                {
+                    failedImports.Add(
+                        $"{Path.GetFileName(fileName)}: {ex.Message}");
+                }
+            }
+
+            ApplyDashboardSettingsToControls();
+            SaveDashboardSettings();
+            ApplySettingsToOpenDisplayWindow();
+
+            ShowImportSummary(
+                "Screensaver Import",
+                dialog.FileNames.Length,
+                failedImports);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Screensaver Import Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void RenameScreensaver_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var screensaver =
+            GetSelectedScreensaverOption();
+
+        if (screensaver is null || !screensaver.IsImported)
+        {
+            return;
+        }
+
+        var importedScreensaver =
+            _settings.ImportedScreensavers
+                .FirstOrDefault(x => x.Id == screensaver.Id);
+
+        if (importedScreensaver is null)
+        {
+            return;
+        }
+
+        var newName =
+            ScreensaverNameTextBox.Text.Trim();
+
+        if (string.IsNullOrWhiteSpace(newName))
+        {
+            MessageBox.Show(
+                "Screensaver name is required.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        if (BuiltInScreensavers.Any(x =>
+                string.Equals(
+                    x.Name,
+                    newName,
+                    StringComparison.OrdinalIgnoreCase)) ||
+            _settings.ImportedScreensavers.Any(x =>
+                x.Id != importedScreensaver.Id &&
+                string.Equals(
+                    x.Name,
+                    newName,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            MessageBox.Show(
+                "A screensaver with that name already exists.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        importedScreensaver.Name =
+            newName;
+
+        SaveDashboardSettings();
+        ApplyDashboardSettingsToControls();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void DeleteScreensaver_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var screensaver =
+            GetSelectedScreensaverOption();
+
+        if (screensaver is null || !screensaver.IsImported)
+        {
+            return;
+        }
+
+        var result =
+            MessageBox.Show(
+                $"Delete '{screensaver.Name}' from imported screensavers?",
+                "Delete Screensaver",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        _settings.ImportedScreensavers.RemoveAll(x =>
+            x.Id == screensaver.Id);
+
+        if (File.Exists(screensaver.FilePath))
+        {
+            try
+            {
+                File.Delete(
+                    screensaver.FilePath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Screensaver File Delete Failed",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
+        }
+
+        _settings.SelectedScreensaverId =
+            "builtin:versecue-default";
+
+        SaveDashboardSettings();
+        ApplyDashboardSettingsToControls();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void LoadDashboardSettings()
+    {
+        try
+        {
+            ApplicationPaths.EnsureDirectoriesExist();
+
+            if (!File.Exists(SettingsFilePath))
+            {
+                return;
+            }
+
+            var json =
+                File.ReadAllText(SettingsFilePath);
+
+            _settings =
+                JsonSerializer.Deserialize<DashboardSettings>(json)
+                ?? new DashboardSettings();
+
+            NormalizeDashboardSettings();
+        }
+        catch
+        {
+            _settings =
+                new DashboardSettings();
+        }
+    }
+
+    private void SaveDashboardSettings()
+    {
+        try
+        {
+            ApplicationPaths.EnsureDirectoriesExist();
+
+            var json =
+                JsonSerializer.Serialize(
+                    _settings,
+                    new JsonSerializerOptions
+                    {
+                        WriteIndented = true
+                    });
+
+            File.WriteAllText(
+                SettingsFilePath,
+                json);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.Message,
+                "Settings Save Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void ApplyDashboardSettingsToControls()
+    {
+        try
+        {
+            _loadingSettings =
+                true;
+
+            SelectComboBoxItem(
+                DashboardThemeComboBox,
+                _settings.DashboardTheme);
+
+            RefreshWallpaperOptions();
+            RefreshScreensaverOptions();
+
+            UpdateWallpaperPathText();
+            UpdateScreensaverPathText();
+        }
+        finally
+        {
+            _loadingSettings =
+                false;
+        }
+    }
+
+    private void ApplyDashboardTheme()
+    {
+        var theme =
+            _settings.DashboardTheme;
+
+        if (theme == "Clean Light")
+        {
+            RootGrid.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(232, 238, 245));
+
+            HeaderBorder.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(37, 99, 235));
+
+            return;
+        }
+
+        if (theme == "Midnight Blue")
+        {
+            RootGrid.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(3, 7, 18));
+
+            HeaderBorder.Background =
+                new SolidColorBrush(
+                    Color.FromRgb(30, 64, 175));
+
+            return;
+        }
+
+        RootGrid.Background =
+            new SolidColorBrush(
+                Color.FromRgb(7, 17, 31));
+
+        HeaderBorder.Background =
+            new SolidColorBrush(
+                Color.FromRgb(85, 41, 216));
+    }
+
+    private void ApplySettingsToOpenDisplayWindow()
+    {
+        if (_verseDisplayWindow is null)
+        {
+            return;
+        }
+
+        if (_projectionContent == ProjectionContent.Screensaver)
+        {
+            _verseDisplayWindow.ShowScreensaver(
+                BuildVerseDisplayOptions());
+
+            return;
+        }
+
+        _verseDisplayWindow!.ApplyDisplayOptions(
+            BuildVerseDisplayOptions());
+    }
+
+    private VerseDisplayWindow.VerseDisplayOptions BuildVerseDisplayOptions()
+    {
+        var wallpaper =
+            GetSelectedWallpaperOption()
+            ?? GetWallpaperOptions()
+                .First();
+
+        return new VerseDisplayWindow.VerseDisplayOptions
+        {
+            WallpaperName =
+                wallpaper.Name,
+
+            ImportedWallpaperPath =
+                wallpaper.FilePath,
+
+            ScreensaverName =
+                GetSelectedScreensaverOption()?.Name
+                ?? BuiltInScreensavers[0].Name,
+
+            ScreensaverPath =
+                GetSelectedScreensaverOption()?.FilePath
+                ?? string.Empty,
+
+            ScreensaverMediaKind =
+                GetSelectedScreensaverOption()?.MediaKind
+                ?? BuiltInScreensavers[0].MediaKind,
+
+            ShowVerseCueWatermark =
+                true
+        };
+    }
+
+    private void UpdateWallpaperPathText()
+    {
+        var wallpaper =
+            GetSelectedWallpaperOption();
+
+        if (wallpaper is null)
+        {
+            WallpaperNameTextBox.Text =
+                string.Empty;
+
+            WallpaperNameTextBox.IsEnabled =
+                false;
+
+            RenameWallpaperButton.IsEnabled =
+                false;
+
+            DeleteWallpaperButton.IsEnabled =
+                false;
+
+            WallpaperPathText.Text =
+                "JPEG or PNG";
+
+            return;
+        }
+
+        WallpaperNameTextBox.Text =
+            wallpaper.Name;
+
+        WallpaperNameTextBox.IsEnabled =
+            wallpaper.IsImported;
+
+        RenameWallpaperButton.IsEnabled =
+            wallpaper.IsImported;
+
+        DeleteWallpaperButton.IsEnabled =
+            wallpaper.IsImported;
+
+        if (wallpaper.IsImported &&
+            !string.IsNullOrWhiteSpace(wallpaper.FilePath))
+        {
+            WallpaperPathText.Text =
+                wallpaper.FilePath;
+
+            return;
+        }
+
+        WallpaperPathText.Text =
+            "Built-in wallpaper";
+    }
+
+    private void NormalizeDashboardSettings()
+    {
+        _settings.ImportedWallpapers ??= [];
+
+        if (string.IsNullOrWhiteSpace(_settings.SelectedWallpaperId))
+        {
+            _settings.SelectedWallpaperId =
+                GetBuiltInWallpaperIdByName(
+                    _settings.VerseDisplayWallpaper);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_settings.ImportedWallpaperPath) &&
+            File.Exists(_settings.ImportedWallpaperPath) &&
+            !_settings.ImportedWallpapers.Any(x =>
+                string.Equals(
+                    x.FilePath,
+                    _settings.ImportedWallpaperPath,
+                    StringComparison.OrdinalIgnoreCase)))
+        {
+            var id =
+                $"imported:{Guid.NewGuid():N}";
+
+            _settings.ImportedWallpapers.Add(
+                new ImportedWallpaperSetting
+                {
+                    Id =
+                        id,
+
+                    Name =
+                        GetUniqueWallpaperName(
+                            "Imported Wallpaper"),
+
+                    FilePath =
+                        _settings.ImportedWallpaperPath
+                });
+
+            if (_settings.VerseDisplayWallpaper == "Imported Wallpaper")
+            {
+                _settings.SelectedWallpaperId =
+                    id;
+            }
+        }
+
+        if (!GetWallpaperOptions().Any(x => x.Id == _settings.SelectedWallpaperId))
+        {
+            _settings.SelectedWallpaperId =
+                "builtin:classic-black";
+        }
+
+        _settings.ImportedScreensavers ??= [];
+
+        if (string.IsNullOrWhiteSpace(_settings.SelectedScreensaverId) ||
+            !GetScreensaverOptions().Any(x => x.Id == _settings.SelectedScreensaverId))
+        {
+            _settings.SelectedScreensaverId =
+                "builtin:versecue-default";
+        }
+    }
+
+    private void RefreshWallpaperOptions()
+    {
+        var wallpapers =
+            GetWallpaperOptions();
+
+        WallpaperComboBox.ItemsSource =
+            wallpapers;
+
+        WallpaperComboBox.SelectedItem =
+            wallpapers.FirstOrDefault(x =>
+                x.Id == _settings.SelectedWallpaperId)
+            ?? wallpapers.First();
+    }
+
+    private List<WallpaperOption> GetWallpaperOptions()
+    {
+        return BuiltInWallpapers
+            .Concat(
+                _settings.ImportedWallpapers
+                    .Where(x =>
+                        !string.IsNullOrWhiteSpace(x.Id) &&
+                        !string.IsNullOrWhiteSpace(x.Name) &&
+                        !string.IsNullOrWhiteSpace(x.FilePath))
+                    .Select(x => new WallpaperOption
+                    {
+                        Id =
+                            x.Id,
+
+                        Name =
+                            x.Name,
+
+                        FilePath =
+                            x.FilePath,
+
+                        IsImported =
+                            true
+                    }))
+            .ToList();
+    }
+
+    private WallpaperOption? GetSelectedWallpaperOption()
+    {
+        return WallpaperComboBox.SelectedItem as WallpaperOption;
+    }
+
+    private void UpdateScreensaverPathText()
+    {
+        var screensaver =
+            GetSelectedScreensaverOption();
+
+        if (screensaver is null)
+        {
+            ScreensaverNameTextBox.Text =
+                string.Empty;
+
+            ScreensaverNameTextBox.IsEnabled =
+                false;
+
+            RenameScreensaverButton.IsEnabled =
+                false;
+
+            DeleteScreensaverButton.IsEnabled =
+                false;
+
+            ScreensaverPathText.Text =
+                "Image, GIF or video";
+
+            return;
+        }
+
+        ScreensaverNameTextBox.Text =
+            screensaver.Name;
+
+        ScreensaverNameTextBox.IsEnabled =
+            screensaver.IsImported;
+
+        RenameScreensaverButton.IsEnabled =
+            screensaver.IsImported;
+
+        DeleteScreensaverButton.IsEnabled =
+            screensaver.IsImported;
+
+        ScreensaverPathText.Text =
+            screensaver.IsImported
+                ? screensaver.FilePath
+                : "Built-in screensaver";
+    }
+
+    private void RefreshScreensaverOptions()
+    {
+        var screensavers =
+            GetScreensaverOptions();
+
+        ScreensaverComboBox.ItemsSource =
+            screensavers;
+
+        ScreensaverComboBox.SelectedItem =
+            screensavers.FirstOrDefault(x =>
+                x.Id == _settings.SelectedScreensaverId)
+            ?? screensavers.First();
+    }
+
+    private List<ScreensaverOption> GetScreensaverOptions()
+    {
+        return BuiltInScreensavers
+            .Concat(
+                _settings.ImportedScreensavers
+                    .Where(x =>
+                        !string.IsNullOrWhiteSpace(x.Id) &&
+                        !string.IsNullOrWhiteSpace(x.Name) &&
+                        !string.IsNullOrWhiteSpace(x.FilePath) &&
+                        !string.IsNullOrWhiteSpace(x.MediaKind))
+                    .Select(x => new ScreensaverOption
+                    {
+                        Id =
+                            x.Id,
+
+                        Name =
+                            x.Name,
+
+                        FilePath =
+                            x.FilePath,
+
+                        MediaKind =
+                            x.MediaKind,
+
+                        IsImported =
+                            true
+                    }))
+            .ToList();
+    }
+
+    private ScreensaverOption? GetSelectedScreensaverOption()
+    {
+        return ScreensaverComboBox.SelectedItem as ScreensaverOption;
+    }
+
+    private string GetUniqueScreensaverName(
+        string requestedName)
+    {
+        var baseName =
+            string.IsNullOrWhiteSpace(requestedName)
+                ? "Imported Screensaver"
+                : requestedName.Trim();
+
+        var existingNames =
+            BuiltInScreensavers
+                .Select(x => x.Name)
+                .Concat(_settings.ImportedScreensavers.Select(x => x.Name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!existingNames.Contains(baseName))
+        {
+            return baseName;
+        }
+
+        var counter =
+            2;
+
+        while (existingNames.Contains($"{baseName} {counter}"))
+        {
+            counter++;
+        }
+
+        return $"{baseName} {counter}";
+    }
+
+    private static string? GetScreensaverMediaKind(
+        string extension)
+    {
+        return extension.ToLowerInvariant() switch
+        {
+            ".jpg" or ".jpeg" or ".png" => "image",
+            ".gif" => "gif",
+            ".mp4" or ".wmv" or ".avi" or ".mov" => "video",
+            _ => null
+        };
+    }
+
+    private static void ShowImportSummary(
+        string title,
+        int totalCount,
+        IReadOnlyCollection<string> failedImports)
+    {
+        var successfulCount =
+            totalCount - failedImports.Count;
+
+        if (failedImports.Count == 0)
+        {
+            MessageBox.Show(
+                $"{successfulCount} file(s) imported successfully.",
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
+        MessageBox.Show(
+            $"{successfulCount} of {totalCount} file(s) imported successfully.\n\n" +
+            string.Join(
+                "\n",
+                failedImports.Take(8)),
+            title,
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+    }
+
+    private string GetUniqueWallpaperName(
+        string requestedName)
+    {
+        var baseName =
+            string.IsNullOrWhiteSpace(requestedName)
+                ? "Imported Wallpaper"
+                : requestedName.Trim();
+
+        var existingNames =
+            BuiltInWallpapers
+                .Select(x => x.Name)
+                .Concat(_settings.ImportedWallpapers.Select(x => x.Name))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!existingNames.Contains(baseName))
+        {
+            return baseName;
+        }
+
+        var counter =
+            2;
+
+        while (existingNames.Contains($"{baseName} {counter}"))
+        {
+            counter++;
+        }
+
+        return $"{baseName} {counter}";
+    }
+
+    private static string GetBuiltInWallpaperIdByName(
+        string wallpaperName)
+    {
+        return BuiltInWallpapers
+            .FirstOrDefault(x =>
+                string.Equals(
+                    x.Name,
+                    wallpaperName,
+                    StringComparison.OrdinalIgnoreCase))
+            ?.Id
+            ?? "builtin:classic-black";
+    }
+
+    private static string GetSelectedComboBoxText(
+        System.Windows.Controls.ComboBox comboBox,
+        string fallback)
+    {
+        return (comboBox.SelectedItem as ComboBoxItem)
+            ?.Content
+            ?.ToString()
+            ?? fallback;
+    }
+
+    private static void SelectComboBoxItem(
+        System.Windows.Controls.ComboBox comboBox,
+        string value)
+    {
+        var item =
+            comboBox.Items
+                .OfType<ComboBoxItem>()
+                .FirstOrDefault(x =>
+                    string.Equals(
+                        x.Content?.ToString(),
+                        value,
+                        StringComparison.OrdinalIgnoreCase));
+
+        comboBox.SelectedItem =
+            item ?? comboBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
+    }
+
+
+    // ============================================================
+    // PROJECTION STATE
+    // ============================================================
+
+    private void LiveProjection_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_projectionMode == ProjectionMode.Live)
+        {
+            GoOffline();
+
+            return;
+        }
+
+        GoLive();
+    }
+
+    private void GoLive()
+    {
+        _projectionMode =
+            ProjectionMode.Live;
+
+        _projectionContent =
+            ProjectionContent.Screensaver;
+
+        _canDisplayNextVerse =
+            false;
+
+        EnsureProjectionWindow();
+        ShowProjectionScreensaver();
+        UpdateProjectionControls();
+    }
+
+    private void GoOffline()
+    {
+        _projectionMode =
+            ProjectionMode.Offline;
+
+        _projectionContent =
+            ProjectionContent.Screensaver;
+
+        _canDisplayNextVerse =
+            false;
+
+        if (_verseDisplayWindow is not null)
+        {
+            _verseDisplayWindow.Hide();
+        }
+
+        UpdateProjectionControls();
+    }
+
+    private void ClearProjection_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (_projectionMode != ProjectionMode.Live)
+        {
+            return;
+        }
+
+        ShowProjectionScreensaver();
+        UpdateProjectionControls();
+    }
+
+    private void EnsureProjectionWindow()
+    {
+        if (_verseDisplayWindow is not null)
+        {
+            PlaceProjectionWindow();
+
+            return;
+        }
+
+        _verseDisplayWindow =
+            new VerseDisplayWindow(
+                _bibleRepository);
+
+        _verseDisplayWindow.Closed +=
+            VerseDisplayWindow_Closed;
+
+        PlaceProjectionWindow();
+    }
+
+    private void PlaceProjectionWindow()
+    {
+        if (_verseDisplayWindow is null)
+        {
+            return;
+        }
+
+        var hasSecondarySurface =
+            SystemParameters.VirtualScreenWidth >
+                SystemParameters.PrimaryScreenWidth ||
+            SystemParameters.VirtualScreenHeight >
+                SystemParameters.PrimaryScreenHeight;
+
+        if (!hasSecondarySurface)
+        {
+            _verseDisplayWindow.WindowStartupLocation =
+                WindowStartupLocation.CenterScreen;
+
+            _verseDisplayWindow.WindowStyle =
+                WindowStyle.SingleBorderWindow;
+
+            _verseDisplayWindow.ResizeMode =
+                ResizeMode.CanResize;
+
+            return;
+        }
+
+        var left =
+            SystemParameters.VirtualScreenLeft < 0
+                ? SystemParameters.VirtualScreenLeft
+                : SystemParameters.PrimaryScreenWidth;
+
+        var top =
+            SystemParameters.VirtualScreenTop < 0
+                ? SystemParameters.VirtualScreenTop
+                : 0;
+
+        var width =
+            SystemParameters.VirtualScreenWidth -
+            SystemParameters.PrimaryScreenWidth;
+
+        var height =
+            SystemParameters.VirtualScreenHeight;
+
+        _verseDisplayWindow.WindowStartupLocation =
+            WindowStartupLocation.Manual;
+
+        _verseDisplayWindow.Left =
+            left;
+
+        _verseDisplayWindow.Top =
+            top;
+
+        _verseDisplayWindow.Width =
+            Math.Max(
+                700,
+                width);
+
+        _verseDisplayWindow.Height =
+            Math.Max(
+                450,
+                height);
+
+        _verseDisplayWindow.WindowState =
+            WindowState.Normal;
+
+        _verseDisplayWindow.WindowStyle =
+            WindowStyle.None;
+
+        _verseDisplayWindow.ResizeMode =
+            ResizeMode.NoResize;
+    }
+
+    private void ShowProjectionScreensaver()
+    {
+        if (_projectionMode != ProjectionMode.Live)
+        {
+            return;
+        }
+
+        EnsureProjectionWindow();
+
+        _verseDisplayWindow?.ShowScreensaver(
+            BuildVerseDisplayOptions());
+
+        _projectionContent =
+            ProjectionContent.Screensaver;
+
+        _canDisplayNextVerse =
+            false;
+    }
+
+    private void UpdateProjectionControls()
+    {
+        var isLive =
+            _projectionMode == ProjectionMode.Live;
+
+        LiveProjectionButton.Content =
+            isLive
+                ? "Go Offline"
+                : "Go Live";
+
+        LiveProjectionButton.Background =
+            isLive
+                ? new SolidColorBrush(Color.FromRgb(185, 28, 28))
+                : new SolidColorBrush(Color.FromRgb(22, 163, 74));
+
+        LiveProjectionButton.BorderBrush =
+            isLive
+                ? new SolidColorBrush(Color.FromRgb(248, 113, 113))
+                : new SolidColorBrush(Color.FromRgb(34, 197, 94));
+
+        ClearProjectionButton.IsEnabled =
+            isLive;
+
+        DisplayVerseButton.IsEnabled =
+            isLive;
+
+        NextVerseButton.IsEnabled =
+            isLive &&
+            _projectionContent == ProjectionContent.Verse &&
+            _canDisplayNextVerse;
+    }
+
 
     // ============================================================
     // DATABASE STATUS
     // ============================================================
+
+    private async Task RefreshBibleManagementAsync()
+    {
+        try
+        {
+            var bibles =
+                await _db.BibleTranslations
+                    .OrderBy(x => x.Name)
+                    .Select(x => new BibleManagementItem
+                    {
+                        Id =
+                            x.Id,
+
+                        Code =
+                            x.Code,
+
+                        Name =
+                            x.Name,
+
+                        Language =
+                            x.Language
+                    })
+                    .ToListAsync();
+
+            BibleManagementListBox.ItemsSource =
+                bibles;
+
+            BibleManagementListBox.SelectedIndex =
+                -1;
+
+            DeleteBibleButton.IsEnabled =
+                false;
+
+            BibleManagementStatusText.Text =
+                bibles.Count == 0
+                    ? "No Bible installed"
+                    : $"{bibles.Count} Bible translation(s) installed";
+        }
+        catch (Exception ex)
+        {
+            BibleManagementListBox.ItemsSource =
+                null;
+
+            DeleteBibleButton.IsEnabled =
+                false;
+
+            BibleManagementStatusText.Text =
+                ex.Message;
+        }
+    }
 
     private async Task RefreshBibleStatusAsync()
     {
@@ -558,6 +2210,17 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
+        if (_projectionMode != ProjectionMode.Live)
+        {
+            MessageBox.Show(
+                "Go Live before displaying verses.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            return;
+        }
+
         if (VerseComboBox.SelectedItems.Count == 0)
         {
             MessageBox.Show(
@@ -652,25 +2315,22 @@ public partial class MainWindow : Window
         }
 
 
-        // Create a new window if there is no
-        // current display window.
+        EnsureProjectionWindow();
 
-        if (_verseDisplayWindow == null)
-        {
-            _verseDisplayWindow =
-                new VerseDisplayWindow(
-                    _bibleRepository);
-
-            _verseDisplayWindow.Closed +=
-                VerseDisplayWindow_Closed;
-        }
+        _verseDisplayWindow!.ApplyDisplayOptions(
+            BuildVerseDisplayOptions());
 
 
         _verseDisplayWindow.ShowVerses(
             displayVerses);
 
-        NextVerseButton.IsEnabled =
+        _projectionContent =
+            ProjectionContent.Verse;
+
+        _canDisplayNextVerse =
             true;
+
+        UpdateProjectionControls();
     }
 
 
@@ -685,16 +2345,17 @@ public partial class MainWindow : Window
         var shouldEnableNext =
             true;
 
-        if (_verseDisplayWindow is null)
+        if (_projectionMode != ProjectionMode.Live ||
+            _projectionContent != ProjectionContent.Verse ||
+            _verseDisplayWindow is null)
         {
-            NextVerseButton.IsEnabled =
-                false;
-
             MessageBox.Show(
-                "Display a verse before using Next.",
+                "Display a verse while Live before using Next.",
                 "VerseCue",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
+
+            UpdateProjectionControls();
 
             return;
         }
@@ -716,6 +2377,9 @@ public partial class MainWindow : Window
                 shouldEnableNext =
                     false;
 
+                _canDisplayNextVerse =
+                    false;
+
                 MessageBox.Show(
                     "There is no next verse available.",
                     "VerseCue",
@@ -724,6 +2388,12 @@ public partial class MainWindow : Window
 
                 return;
             }
+
+            _projectionContent =
+                ProjectionContent.Verse;
+
+            _canDisplayNextVerse =
+                true;
         }
         catch (Exception ex)
         {
@@ -743,8 +2413,10 @@ public partial class MainWindow : Window
 
             if (_verseDisplayWindow is not null)
             {
-                NextVerseButton.IsEnabled =
+                _canDisplayNextVerse =
                     shouldEnableNext;
+
+                UpdateProjectionControls();
             }
         }
     }
@@ -760,8 +2432,16 @@ public partial class MainWindow : Window
     {
         _verseDisplayWindow = null;
 
-        NextVerseButton.IsEnabled =
+        _projectionMode =
+            ProjectionMode.Offline;
+
+        _projectionContent =
+            ProjectionContent.Screensaver;
+
+        _canDisplayNextVerse =
             false;
+
+        UpdateProjectionControls();
     }
 
 

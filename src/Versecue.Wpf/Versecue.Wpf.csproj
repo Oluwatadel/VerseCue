@@ -16,6 +16,14 @@
     <Content Include="ggml-base.bin">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\..\logo\vercue_logo.png">
+      <Link>Assets\vercue_logo.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\logo\Airis_logo.png">
+      <Link>Assets\Airis_logo.png</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 	<ItemGroup>

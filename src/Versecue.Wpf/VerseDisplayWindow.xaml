@@ -9,48 +9,128 @@
         WindowStartupLocation="CenterScreen"
         Background="#111111">
 
-    <Grid Margin="50">
+    <Grid x:Name="DisplayRoot">
 
-        <ItemsControl
-            x:Name="VerseItemsControl"
-            HorizontalAlignment="Stretch"
-            VerticalAlignment="Center">
+        <MediaElement
+            x:Name="ScreensaverMediaElement"
+            LoadedBehavior="Manual"
+            UnloadedBehavior="Manual"
+            Stretch="UniformToFill"
+            IsMuted="True"
+            Visibility="Collapsed"
+            MediaEnded="ScreensaverMediaElement_MediaEnded"/>
 
-            <ItemsControl.ItemTemplate>
+        <Image
+            x:Name="ScreensaverImage"
+            Stretch="UniformToFill"
+            Visibility="Collapsed"/>
 
-                <DataTemplate>
+        <Grid
+            x:Name="DefaultScreensaverGrid"
+            Visibility="Collapsed">
 
-                    <StackPanel
-                        Margin="0,0,0,34">
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
 
-                        <!-- Verse text -->
+                <Image
+                    Source="Assets/vercue_logo.png"
+                    Width="180"
+                    Height="140"
+                    Stretch="Uniform"
+                    Opacity="0.9"/>
 
-                        <TextBlock
-                            Text="{Binding Verse.Text}"
-                            Foreground="White"
-                            FontSize="38"
-                            FontWeight="SemiBold"
-                            TextWrapping="Wrap"
-                            TextAlignment="Center"
-                            HorizontalAlignment="Stretch"/>
+                <TextBlock
+                    Text="VerseCue"
+                    FontSize="42"
+                    FontWeight="Bold"
+                    Foreground="#F8FAFC"
+                    HorizontalAlignment="Center"
+                    Margin="0,18,0,0"/>
 
-                        <!-- Reference -->
+            </StackPanel>
 
-                        <TextBlock
-                            Text="{Binding Reference}"
-                            Foreground="#AAAAAA"
-                            FontSize="21"
-                            Margin="0,16,0,0"
-                            TextAlignment="Center"
-                            HorizontalAlignment="Center"/>
+        </Grid>
 
-                    </StackPanel>
+        <Border
+            x:Name="WallpaperOverlay"
+            Background="#66000000"/>
 
-                </DataTemplate>
+        <Grid Margin="50">
 
-            </ItemsControl.ItemTemplate>
+            <ItemsControl
+                x:Name="VerseItemsControl"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Center">
 
-        </ItemsControl>
+                <ItemsControl.ItemTemplate>
+
+                    <DataTemplate>
+
+                        <StackPanel
+                            Margin="0,0,0,34">
+
+                            <!-- Verse text -->
+
+                            <TextBlock
+                                Text="{Binding Verse.Text}"
+                                Foreground="White"
+                                FontSize="38"
+                                FontWeight="SemiBold"
+                                TextWrapping="Wrap"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Stretch"/>
+
+                            <!-- Reference -->
+
+                            <TextBlock
+                                Text="{Binding Reference}"
+                                Foreground="#AAAAAA"
+                                FontSize="21"
+                                Margin="0,16,0,0"
+                                TextAlignment="Center"
+                                HorizontalAlignment="Center"/>
+
+                        </StackPanel>
+
+                    </DataTemplate>
+
+                </ItemsControl.ItemTemplate>
+
+            </ItemsControl>
+
+        </Grid>
+
+        <Border
+            x:Name="VerseCueWatermark"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            Margin="0,0,28,24"
+            Background="#55000000"
+            CornerRadius="6"
+            Padding="8,6">
+
+            <StackPanel Orientation="Horizontal">
+
+                <Image
+                    Source="Assets/vercue_logo.png"
+                    Width="24"
+                    Height="24"
+                    Stretch="Uniform"
+                    Opacity="0.72"/>
+
+                <TextBlock
+                    Text="VerseCue"
+                    Foreground="#D1D5DB"
+                    FontSize="13"
+                    FontWeight="SemiBold"
+                    VerticalAlignment="Center"
+                    Margin="8,0,0,0"
+                    Opacity="0.72"/>
+
+            </StackPanel>
+
+        </Border>
 
     </Grid>
 
