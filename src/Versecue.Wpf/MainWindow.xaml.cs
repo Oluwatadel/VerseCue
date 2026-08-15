@@ -1,11 +1,11 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Win32;
 using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Win32;
 using Versecue.Application.Interfaces;
 using Versecue.Application.Interfaces.Repository;
 using Versecue.Application.Models.Bible;
@@ -96,7 +96,7 @@ public partial class MainWindow : Window
         public string Language { get; init; } = string.Empty;
 
         public string DisplayName =>
-            $"{Name} ({Code}) - {Language}";
+            $"{Code} - {Language}";
     }
 
     private sealed class DashboardSettings
@@ -296,9 +296,12 @@ public partial class MainWindow : Window
         DeleteBibleButton.IsEnabled =
             hasSelection;
 
+        RenameBibleButton.IsEnabled =
+            hasSelection;
+
         BibleManagementStatusText.Text =
             hasSelection
-                ? "Selected Bible can be deleted."
+                ? "Selected Bible can be deleted or renamed."
                 : "No Bible selected";
     }
 
@@ -375,6 +378,88 @@ public partial class MainWindow : Window
         {
             Mouse.OverrideCursor =
                 null;
+        }
+    }
+
+    private async void RenameBible_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (BibleManagementListBox.SelectedItem is not BibleManagementItem item)
+        {
+            return;
+        }
+
+        var newCode = InputDialog.Show(
+            "Rename Bible Code",
+            $"Enter a new abbreviation/code for {item.Name} (currently {item.Code}):",
+            item.Code);
+
+        if (string.IsNullOrWhiteSpace(newCode))
+        {
+            return;
+        }
+
+        newCode = newCode.Trim().ToUpperInvariant();
+        var sanitizedCode = new string(newCode.Where(char.IsLetterOrDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(sanitizedCode))
+        {
+            MessageBox.Show(
+                "Bible abbreviation/code must contain letters or digits.",
+                "Rename Bible",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (sanitizedCode == item.Code)
+        {
+            return;
+        }
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            var translation = await _db.BibleTranslations
+                .FirstOrDefaultAsync(x => x.Id == item.Id);
+
+            if (translation is null)
+            {
+                MessageBox.Show(
+                    "The selected Bible no longer exists.",
+                    "Rename Bible",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                await RefreshBibleManagementAsync();
+                return;
+            }
+
+            translation.Rename(sanitizedCode);
+            await _db.SaveChangesAsync();
+
+            await RefreshBibleStatusAsync();
+            await RefreshBibleManagementAsync();
+            await LoadTranslationsAsync();
+
+            MessageBox.Show(
+                "Bible code renamed successfully.",
+                "Rename Bible",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Rename Bible Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
         }
     }
 
@@ -1825,8 +1910,7 @@ public partial class MainWindow : Window
             }
 
 
-            TranslationText.Text =
-                $"{translation.Name} ({translation.Code})";
+            TranslationText.Text = translation.Code;
 
             LanguageText.Text =
                 $"Language: {translation.Language}";
@@ -2695,5 +2779,104 @@ public partial class MainWindow : Window
             previewItems.Count == 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+    }
+}
+
+public static class InputDialog
+{
+    public static string? Show(string title, string prompt, string defaultValue = "")
+    {
+        double calculatedWidth = Math.Max(400, Math.Min(700, Math.Max(prompt.Length * 7.5, defaultValue.Length * 10) + 60));
+
+        var window = new Window
+        {
+            Title = title,
+            Width = calculatedWidth,
+            MinWidth = 400,
+            MinHeight = 160,
+            SizeToContent = SizeToContent.Height,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = System.Windows.Application.Current.MainWindow,
+            ResizeMode = ResizeMode.CanResize,
+            WindowStyle = WindowStyle.ToolWindow,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0C1F39")),
+            Foreground = Brushes.White
+        };
+
+        var grid = new Grid { Margin = new Thickness(15) };
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var textBlock = new TextBlock
+        {
+            Text = prompt,
+            Margin = new Thickness(0, 0, 0, 10),
+            Foreground = Brushes.White,
+            FontSize = 13,
+            TextWrapping = TextWrapping.Wrap
+        };
+        Grid.SetRow(textBlock, 0);
+        grid.Children.Add(textBlock);
+
+        var textBox = new TextBox
+        {
+            Text = defaultValue,
+            Height = 26,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#1D3557")),
+            Foreground = Brushes.White,
+            BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A446D")),
+            CaretBrush = Brushes.White,
+            FontSize = 13,
+            VerticalContentAlignment = VerticalAlignment.Center,
+            Padding = new Thickness(4, 0, 4, 0)
+        };
+        Grid.SetRow(textBox, 1);
+        grid.Children.Add(textBox);
+
+        var buttonPanel = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            HorizontalAlignment = HorizontalAlignment.Right,
+            Margin = new Thickness(0, 15, 0, 0)
+        };
+        Grid.SetRow(buttonPanel, 2);
+
+        var okButton = new Button
+        {
+            Content = "OK",
+            Width = 75,
+            Height = 24,
+            IsDefault = true,
+            Margin = new Thickness(0, 0, 10, 0),
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A446D")),
+            Foreground = Brushes.White
+        };
+        okButton.Click += (s, e) => { window.DialogResult = true; window.Close(); };
+        buttonPanel.Children.Add(okButton);
+
+        var cancelButton = new Button
+        {
+            Content = "Cancel",
+            Width = 75,
+            Height = 24,
+            IsCancel = true,
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2A446D")),
+            Foreground = Brushes.White
+        };
+        cancelButton.Click += (s, e) => { window.DialogResult = false; window.Close(); };
+        buttonPanel.Children.Add(cancelButton);
+
+        grid.Children.Add(buttonPanel);
+        window.Content = grid;
+
+        textBox.Focus();
+        textBox.SelectAll();
+
+        if (window.ShowDialog() == true)
+        {
+            return textBox.Text;
+        }
+        return null;
     }
 }

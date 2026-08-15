@@ -82,9 +82,16 @@
             Background="#06101F"
             BorderBrush="#172A46"
             BorderThickness="0,0,1,0"
-            Padding="18">
+            Padding="0">
 
-            <Grid>
+            <ScrollViewer
+                VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled"
+                Padding="18"
+                BorderThickness="0"
+                Background="Transparent">
+
+                <Grid>
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -268,7 +275,9 @@
 
                 </StackPanel>
 
-            </Grid>
+                </Grid>
+
+            </ScrollViewer>
 
         </Border>
 
@@ -281,10 +290,10 @@
             Grid.Column="1">
 
             <Grid.RowDefinitions>
-                <RowDefinition Height="86"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="92"/>
-                <RowDefinition Height="54"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <!-- HEADER -->
@@ -293,6 +302,7 @@
                 x:Name="HeaderBorder"
                 Grid.Row="0"
                 Background="#5529D8"
+                MinHeight="86"
                 Padding="22,16">
 
                 <Grid>
@@ -505,7 +515,7 @@
                                             CornerRadius="4">
 
                                             <TextBlock
-                                                Text="{Binding VerseNumber}"
+                                                Text="{Binding VerseDisplay}"
                                                 FontSize="15"
                                                 FontWeight="SemiBold"
                                                 HorizontalAlignment="Center"
@@ -736,59 +746,51 @@
 
                         </Border>
 
-                        <Grid
-                            Grid.Row="6">
-
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                        <WrapPanel
+                            Grid.Row="6"
+                            Orientation="Horizontal">
 
                             <Button
-                                Grid.Column="0"
                                 x:Name="LiveProjectionButton"
                                 Content="Go Live"
                                 MinWidth="96"
                                 Height="46"
+                                Margin="0,0,10,10"
                                 Background="#16A34A"
                                 BorderBrush="#22C55E"
                                 FontWeight="SemiBold"
                                 Click="LiveProjection_Click"/>
 
                             <Button
-                                Grid.Column="2"
                                 x:Name="NextVerseButton"
                                 Content="Next"
                                 MinWidth="90"
                                 Height="46"
+                                Margin="0,0,10,10"
                                 IsEnabled="False"
                                 Click="NextVerse_Click"/>
 
                             <Button
-                                Grid.Column="4"
                                 x:Name="ClearProjectionButton"
                                 Content="Clear"
                                 MinWidth="90"
                                 Height="46"
+                                Margin="0,0,10,10"
                                 IsEnabled="False"
                                 Click="ClearProjection_Click"/>
 
                             <Button
-                                Grid.Column="6"
                                 x:Name="DisplayVerseButton"
                                 Content="Display Selected Verse(s)"
+                                MinWidth="180"
                                 Height="46"
+                                Margin="0,0,0,10"
                                 Background="#7C3AED"
                                 BorderBrush="#A855F7"
                                 FontWeight="SemiBold"
                                 Click="DisplayVerse_Click"/>
 
-                        </Grid>
+                        </WrapPanel>
 
                     </Grid>
 
@@ -866,8 +868,11 @@
 
                                     <ListBox
                                         x:Name="BibleManagementListBox"
-                                        MinHeight="140"
-                                        MaxHeight="200"
+                                        MinHeight="150"
+                                        MaxHeight="380"
+                                        VerticalAlignment="Stretch"
+                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                         DisplayMemberPath="DisplayName"
                                         SelectionChanged="BibleManagementListBox_SelectionChanged"/>
 
@@ -881,6 +886,14 @@
                                             Height="38"
                                             IsEnabled="False"
                                             Click="DeleteBible_Click"/>
+
+                                        <Button
+                                            x:Name="RenameBibleButton"
+                                            Content="Rename Bible"
+                                            Height="38"
+                                            Margin="0,8,0,0"
+                                            IsEnabled="False"
+                                            Click="RenameBible_Click"/>
 
                                         <TextBlock
                                             x:Name="BibleManagementStatusText"
@@ -973,59 +986,48 @@
                                     DisplayMemberPath="Name"
                                     SelectionChanged="ScreensaverComboBox_SelectionChanged"/>
 
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="220"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
+                                <WrapPanel Margin="0,12,0,0" Orientation="Horizontal">
                                     <Button
-                                        Grid.Column="0"
                                         Content="Import Screensaver"
                                         MinWidth="158"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         Click="ImportScreensaver_Click"/>
 
                                     <TextBox
-                                        Grid.Column="2"
                                         x:Name="ScreensaverNameTextBox"
+                                        Width="220"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         VerticalContentAlignment="Center"
                                         IsEnabled="False"/>
 
                                     <Button
-                                        Grid.Column="4"
                                         x:Name="RenameScreensaverButton"
                                         Content="Rename"
                                         MinWidth="86"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         IsEnabled="False"
                                         Click="RenameScreensaver_Click"/>
 
                                     <Button
-                                        Grid.Column="6"
                                         x:Name="DeleteScreensaverButton"
                                         Content="Delete"
                                         MinWidth="80"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         IsEnabled="False"
                                         Click="DeleteScreensaver_Click"/>
 
                                     <TextBlock
-                                        Grid.Column="8"
                                         x:Name="ScreensaverPathText"
                                         Text="Image, GIF or video"
                                         Foreground="{StaticResource TextMutedBrush}"
                                         VerticalAlignment="Center"
+                                        Margin="0,0,0,10"
                                         TextTrimming="CharacterEllipsis"/>
-                                </Grid>
+                                </WrapPanel>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1064,59 +1066,48 @@
                                     DisplayMemberPath="Name"
                                     SelectionChanged="WallpaperComboBox_SelectionChanged"/>
 
-                                <Grid Margin="0,12,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="220"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="10"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
+                                <WrapPanel Margin="0,12,0,0" Orientation="Horizontal">
                                     <Button
-                                        Grid.Column="0"
                                         Content="Import Wallpaper"
                                         MinWidth="144"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         Click="ImportWallpaper_Click"/>
 
                                     <TextBox
-                                        Grid.Column="2"
                                         x:Name="WallpaperNameTextBox"
+                                        Width="220"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         VerticalContentAlignment="Center"
                                         IsEnabled="False"/>
 
                                     <Button
-                                        Grid.Column="4"
                                         x:Name="RenameWallpaperButton"
                                         Content="Rename"
                                         MinWidth="86"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         IsEnabled="False"
                                         Click="RenameWallpaper_Click"/>
 
                                     <Button
-                                        Grid.Column="6"
                                         x:Name="DeleteWallpaperButton"
                                         Content="Delete"
                                         MinWidth="80"
                                         Height="38"
+                                        Margin="0,0,10,10"
                                         IsEnabled="False"
                                         Click="DeleteWallpaper_Click"/>
 
                                     <TextBlock
-                                        Grid.Column="8"
                                         x:Name="WallpaperPathText"
                                         Text="JPEG or PNG"
                                         Foreground="{StaticResource TextMutedBrush}"
                                         VerticalAlignment="Center"
+                                        Margin="0,0,0,10"
                                         TextTrimming="CharacterEllipsis"/>
-                                </Grid>
+                                </WrapPanel>
                             </StackPanel>
                         </Grid>
                     </Border>
@@ -1241,6 +1232,7 @@
                 Background="#06101F"
                 BorderBrush="#172A46"
                 BorderThickness="0,1,0,0"
+                MinHeight="54"
                 Padding="18,0">
 
                 <Grid>

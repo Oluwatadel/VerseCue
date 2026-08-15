@@ -297,13 +297,17 @@ public sealed class BibleImportService : IBibleImportService
                     };
 
                     var parsedVerses = new List<VerseImportDocument>();
-                    foreach (var verseElement in chapterElement
+                    var verseElements = chapterElement
                                  .Elements()
                                  .Where(x => x.Name.LocalName.Equals(
                                      "verse",
-                                     StringComparison.OrdinalIgnoreCase)))
+                                     StringComparison.OrdinalIgnoreCase))
+                                 .ToList();
+
+                    for (int i = 0; i < verseElements.Count; i++)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+                        var verseElement = verseElements[i];
 
                         var verseNum = GetRequiredIntAttribute(
                             verseElement,
@@ -312,20 +316,37 @@ public sealed class BibleImportService : IBibleImportService
                         
                         var text = NormalizeVerseText(verseElement.Value);
 
-                        if (string.IsNullOrWhiteSpace(text) &&
-                            parsedVerses.Count > 0 &&
-                            !string.IsNullOrWhiteSpace(parsedVerses[^1].Text) &&
-                            !parsedVerses[^1].EndNumber.HasValue)
+                        if (!string.IsNullOrWhiteSpace(text))
                         {
-                            parsedVerses[^1].EndNumber = verseNum;
-                        }
-                        else
-                        {
-                            parsedVerses.Add(new VerseImportDocument
+                            var logicalVerse = new VerseImportDocument
                             {
                                 Number = verseNum,
                                 Text = text
-                            });
+                            };
+
+                            // Look ahead at subsequent verse elements
+                            while (i + 1 < verseElements.Count)
+                            {
+                                var nextElement = verseElements[i + 1];
+                                var nextText = NormalizeVerseText(nextElement.Value);
+
+                                if (string.IsNullOrWhiteSpace(nextText))
+                                {
+                                    var nextVerseNum = GetRequiredIntAttribute(
+                                        nextElement,
+                                        "number",
+                                        $"Verse number is required for book '{bookName}', chapter {chapter.Number}.");
+                                    
+                                    logicalVerse.EndNumber = nextVerseNum;
+                                    i++; // Consume the empty verse
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+
+                            parsedVerses.Add(logicalVerse);
                         }
                     }
 
@@ -341,6 +362,50 @@ public sealed class BibleImportService : IBibleImportService
         return document;
     }
 
+    private static string ExtractAbbreviationFromName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "BIBLE";
+
+        int parenIndex = name.IndexOf('(');
+        if (parenIndex >= 0)
+        {
+            name = name.Substring(0, parenIndex);
+        }
+
+        var parts = name.Split(new[] { ' ', '-', '_', '/' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length > 1)
+        {
+            var letters = parts
+                .Select(p => p.Trim())
+                .Where(p => p.Length > 0)
+                .Select(p => p[0])
+                .Where(char.IsLetterOrDigit);
+            
+            var abbr = new string(letters.ToArray()).ToUpperInvariant();
+            if (abbr.Length >= 2)
+            {
+                return abbr;
+            }
+        }
+
+        var cleanName = new string(name.Where(char.IsLetterOrDigit).ToArray());
+        if (string.IsNullOrEmpty(cleanName))
+        {
+            return "BIBLE";
+        }
+
+        var upperLetters = cleanName.Where(char.IsUpper).ToArray();
+        if (upperLetters.Length >= 2)
+        {
+            return new string(upperLetters).ToUpperInvariant();
+        }
+
+        return cleanName.Length <= 4 
+            ? cleanName.ToUpperInvariant() 
+            : cleanName.Substring(0, 3).ToUpperInvariant();
+    }
+
     private static BibleImportDocument CreateXmlDocumentMetadata(
         string translationName)
     {
@@ -348,15 +413,13 @@ public sealed class BibleImportService : IBibleImportService
             ? "Bible"
             : translationName.Trim();
 
+        var code = ExtractAbbreviationFromName(name);
+
         var parts = name
             .Split(
                 ' ',
                 StringSplitOptions.RemoveEmptyEntries |
                 StringSplitOptions.TrimEntries);
-
-        var code = parts.Length > 0
-            ? parts[^1]
-            : name;
 
         var language = parts.Length > 1
             ? parts[0]
@@ -375,14 +438,20 @@ public sealed class BibleImportService : IBibleImportService
     private static string SanitizeTranslationCode(
         string value)
     {
-        var code = new string(
+        if (string.IsNullOrWhiteSpace(value))
+            return "BIBLE";
+
+        var clean = new string(
             value
                 .Where(char.IsLetterOrDigit)
                 .ToArray());
 
-        return string.IsNullOrWhiteSpace(code)
-            ? "BIBLE"
-            : code.ToUpperInvariant();
+        if (clean.Length > 8)
+        {
+            clean = ExtractAbbreviationFromName(clean);
+        }
+
+        return clean.ToUpperInvariant();
     }
 
     private static string GetRequiredAttribute(

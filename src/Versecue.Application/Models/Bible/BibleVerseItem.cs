@@ -11,5 +11,9 @@ public sealed class BibleVerseListItem
     public int? VerseEndNumber { get; init; }
 
     public string Text { get; init; } = string.Empty;
+
+    public string VerseDisplay => VerseEndNumber.HasValue 
+        ? $"{VerseNumber}–{VerseEndNumber}" 
+        : VerseNumber.ToString();
 }
 

@@ -54,4 +54,16 @@ public class BibleTranslation
     {
         IsActive = active;
     }
+
+    public void Rename(string newCode)
+    {
+        if (string.IsNullOrWhiteSpace(newCode)) 
+            throw new BibleTranslationArgumentException($"Code required, {nameof(newCode)}");
+        
+        var sanitized = new string(newCode.Where(char.IsLetterOrDigit).ToArray());
+        if (string.IsNullOrWhiteSpace(sanitized))
+            throw new BibleTranslationArgumentException("Code must contain letters or digits.");
+            
+        Code = sanitized.ToUpperInvariant();
+    }
 }
