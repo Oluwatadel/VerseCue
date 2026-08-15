@@ -12,13 +12,14 @@ public class BibleVerse
     public int VerseNumber { get; private set; }
     public int? VerseEndNumber { get; private set; }
     public string Text { get; private set; }
+    public string? Transliteration { get; private set; }
 
     // Navigation
     public BibleChapter? Chapter { get; private set; }
 
     private BibleVerse() { } // EF Core
 
-    public BibleVerse(Guid chapterId, int verseNumber, int? verseEndNumber, string text)
+    public BibleVerse(Guid chapterId, int verseNumber, int? verseEndNumber, string text, string? transliteration = null)
     {
         if (verseNumber <= 0) 
             throw new BibleVerseArgumentException($"VerseNumber must be positive, {nameof(verseNumber)}");
@@ -32,10 +33,11 @@ public class BibleVerse
         VerseNumber = verseNumber;
         VerseEndNumber = verseEndNumber;
         Text = text.Trim();
+        Transliteration = transliteration?.Trim();
     }
 
-    public BibleVerse(int verseNumber, int? verseEndNumber, string text, BibleChapter chapter)
-        : this(chapter.Id, verseNumber, verseEndNumber, text)
+    public BibleVerse(int verseNumber, int? verseEndNumber, string text, BibleChapter chapter, string? transliteration = null)
+        : this(chapter.Id, verseNumber, verseEndNumber, text, transliteration)
     {
         Chapter = chapter;
     }

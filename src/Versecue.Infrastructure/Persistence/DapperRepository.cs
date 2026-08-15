@@ -578,6 +578,205 @@ public sealed class DapperBibleRepository : IBibleRepository
         };
     }
 
+    public async Task<BibleVerseNavigationItem?>
+        GetPreviousVerseAsync(
+            Guid translationId,
+            Guid currentVerseId,
+            CancellationToken cancellationToken = default)
+    {
+        const string currentVerseSql = @"
+            SELECT
+                b.CanonicalOrder,
+                c.ChapterNumber,
+                v.VerseNumber
+            FROM BibleVerses v
+            INNER JOIN BibleChapters c
+                ON c.Id = v.ChapterId
+            INNER JOIN BibleBooks b
+                ON b.Id = c.BookId
+            WHERE v.Id = @CurrentVerseId COLLATE NOCASE
+              AND b.TranslationId = @TranslationId COLLATE NOCASE
+            LIMIT 1;
+            ";
+
+        const string prevVerseSql = @"
+            SELECT
+                t.Id AS TranslationId,
+                t.Code AS TranslationCode,
+                b.Id AS BookId,
+                b.Name AS BookName,
+                b.CanonicalOrder AS BookCanonicalOrder,
+                c.Id AS ChapterId,
+                c.ChapterNumber,
+                v.Id AS VerseId,
+                v.VerseNumber,
+                v.VerseEndNumber,
+                v.Text
+            FROM BibleVerses v
+            INNER JOIN BibleChapters c
+                ON c.Id = v.ChapterId
+            INNER JOIN BibleBooks b
+                ON b.Id = c.BookId
+            INNER JOIN BibleTranslations t
+                ON t.Id = b.TranslationId
+            WHERE t.Id = @TranslationId COLLATE NOCASE
+              AND
+              (
+                    b.CanonicalOrder < @CanonicalOrder
+                 OR (
+                        b.CanonicalOrder = @CanonicalOrder
+                    AND c.ChapterNumber < @ChapterNumber
+                    )
+                 OR (
+                        b.CanonicalOrder = @CanonicalOrder
+                    AND c.ChapterNumber = @ChapterNumber
+                    & v.VerseNumber < @VerseNumber
+                    )
+              )
+            ORDER BY
+                b.CanonicalOrder DESC,
+                c.ChapterNumber DESC,
+                v.VerseNumber DESC
+            LIMIT 1;
+            ";
+
+        // Wait! In the prevVerseSql, we need "AND" instead of "&". Let's correct it:
+        // OR ( b.CanonicalOrder = @CanonicalOrder AND c.ChapterNumber = @ChapterNumber AND v.VerseNumber < @VerseNumber )
+
+        await using var connection = CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var currentVerse =
+            await connection.QueryFirstOrDefaultAsync<CurrentVerseRow>(
+                new CommandDefinition(
+                    currentVerseSql,
+                    new
+                    {
+                        TranslationId =
+                            translationId.ToString("D"),
+                        CurrentVerseId =
+                            currentVerseId.ToString("D")
+                    },
+                    commandTimeout: 5,
+                    cancellationToken: cancellationToken));
+
+        if (currentVerse is null)
+        {
+            return null;
+        }
+
+        var queryPrevSql = prevVerseSql.Replace("&", "AND");
+
+        var row =
+            await connection.QueryFirstOrDefaultAsync<NextVerseRow>(
+                new CommandDefinition(
+                    queryPrevSql,
+                    new
+                    {
+                        TranslationId =
+                            translationId.ToString("D"),
+                        CanonicalOrder =
+                            currentVerse.CanonicalOrder,
+                        ChapterNumber =
+                            currentVerse.ChapterNumber,
+                        VerseNumber =
+                            currentVerse.VerseNumber
+                    },
+                    commandTimeout: 5,
+                    cancellationToken: cancellationToken));
+
+        if (row is null)
+        {
+            return null;
+        }
+
+        return new BibleVerseNavigationItem
+        {
+            TranslationId =
+                Guid.Parse(row.TranslationId),
+            TranslationCode =
+                row.TranslationCode,
+            BookId =
+                Guid.Parse(row.BookId),
+            BookName =
+                row.BookName,
+            BookCanonicalOrder =
+                row.BookCanonicalOrder,
+            ChapterId =
+                Guid.Parse(row.ChapterId),
+            ChapterNumber =
+                row.ChapterNumber,
+            Verse =
+                new BibleVerseListItem
+                {
+                    Id =
+                        Guid.Parse(row.VerseId),
+                    ChapterId =
+                        Guid.Parse(row.ChapterId),
+                    VerseNumber =
+                        row.VerseNumber,
+                    VerseEndNumber =
+                        row.VerseEndNumber,
+                    Text =
+                        row.Text
+                }
+        };
+    }
+
+    public async Task<IReadOnlyList<BibleSearchResultItem>>
+        SearchVersesAsync(
+            Guid translationId,
+            string query,
+            CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return Array.Empty<BibleSearchResultItem>();
+        }
+
+        const string sql = @"
+            SELECT
+                v.Id AS VerseId,
+                b.Id AS BookId,
+                b.Name AS BookName,
+                c.ChapterNumber,
+                v.VerseNumber,
+                v.VerseEndNumber,
+                v.Text,
+                t.Id AS TranslationId,
+                t.Code AS TranslationCode
+            FROM BibleVerses v
+            INNER JOIN BibleChapters c
+                ON c.Id = v.ChapterId
+            INNER JOIN BibleBooks b
+                ON b.Id = c.BookId
+            INNER JOIN BibleTranslations t
+                ON t.Id = b.TranslationId
+            WHERE t.Id = @TranslationId COLLATE NOCASE
+              AND v.Text LIKE @Query
+            ORDER BY
+                b.CanonicalOrder,
+                c.ChapterNumber,
+                v.VerseNumber
+            LIMIT 100;
+            ";
+
+        await using var connection = CreateConnection();
+        await connection.OpenAsync(cancellationToken);
+
+        var command = new CommandDefinition(
+            sql,
+            new
+            {
+                TranslationId = translationId.ToString("D"),
+                Query = $"%{query.Trim()}%"
+            },
+            cancellationToken: cancellationToken);
+
+        var rows = await connection.QueryAsync<BibleSearchResultItem>(command);
+        return rows.ToList();
+    }
+
     // ============================================================
     // INTERNAL DAPPER ROW TYPES
     // ============================================================

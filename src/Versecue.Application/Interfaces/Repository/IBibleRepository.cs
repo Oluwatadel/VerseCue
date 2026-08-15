@@ -37,4 +37,29 @@ public interface IBibleRepository
             Guid translationId,
             Guid currentVerseId,
             CancellationToken cancellationToken = default);
+
+    Task<BibleVerseNavigationItem?>
+        GetPreviousVerseAsync(
+            Guid translationId,
+            Guid currentVerseId,
+            CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<BibleSearchResultItem>>
+        SearchVersesAsync(
+            Guid translationId,
+            string query,
+            CancellationToken cancellationToken = default);
+}
+
+public sealed class BibleSearchResultItem
+{
+    public Guid VerseId { get; set; }
+    public Guid BookId { get; set; }
+    public string BookName { get; set; } = string.Empty;
+    public int ChapterNumber { get; set; }
+    public int VerseNumber { get; set; }
+    public int? VerseEndNumber { get; set; }
+    public string Text { get; set; } = string.Empty;
+    public Guid TranslationId { get; set; }
+    public string TranslationCode { get; set; } = string.Empty;
 }

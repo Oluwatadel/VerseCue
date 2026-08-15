@@ -56,40 +56,43 @@
             x:Name="WallpaperOverlay"
             Background="#66000000"/>
 
-        <Grid Margin="50">
+        <Grid Margin="{Binding Path=ProjectorDisplayMargin, RelativeSource={RelativeSource AncestorType=Window}}" x:Name="ContentContainer">
 
-            <ItemsControl
-                x:Name="VerseItemsControl"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Center">
+            <Viewbox Stretch="Uniform" HorizontalAlignment="Stretch" VerticalAlignment="Center" StretchDirection="DownOnly">
+                <ItemsControl
+                    x:Name="VerseItemsControl"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Center"
+                    Width="{Binding ActualWidth, ElementName=ContentContainer}">
 
                 <ItemsControl.ItemTemplate>
 
                     <DataTemplate>
 
                         <StackPanel
-                            Margin="0,0,0,34">
+                            Margin="{Binding Path=ProjectorSpacing, RelativeSource={RelativeSource AncestorType=Window}}">
 
                             <!-- Verse text -->
 
                             <TextBlock
                                 Text="{Binding Verse.Text}"
-                                Foreground="White"
-                                FontSize="38"
+                                Foreground="{Binding Path=ProjectorTextColor, RelativeSource={RelativeSource AncestorType=Window}}"
+                                FontSize="{Binding Path=ProjectorFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                 FontWeight="SemiBold"
                                 TextWrapping="Wrap"
-                                TextAlignment="Center"
+                                TextAlignment="{Binding Path=ProjectorTextAlignment, RelativeSource={RelativeSource AncestorType=Window}}"
                                 HorizontalAlignment="Stretch"/>
 
                             <!-- Reference -->
 
                             <TextBlock
                                 Text="{Binding Reference}"
-                                Foreground="#AAAAAA"
-                                FontSize="21"
+                                Foreground="{Binding Path=ProjectorReferenceColor, RelativeSource={RelativeSource AncestorType=Window}}"
+                                FontSize="{Binding Path=ProjectorReferenceFontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                                 Margin="0,16,0,0"
-                                TextAlignment="Center"
-                                HorizontalAlignment="Center"/>
+                                TextAlignment="{Binding Path=ProjectorTextAlignment, RelativeSource={RelativeSource AncestorType=Window}}"
+                                HorizontalAlignment="Center"
+                                Visibility="{Binding Path=ProjectorReferenceVisibility, RelativeSource={RelativeSource AncestorType=Window}}"/>
 
                         </StackPanel>
 
@@ -98,6 +101,7 @@
                 </ItemsControl.ItemTemplate>
 
             </ItemsControl>
+            </Viewbox>
 
         </Grid>
 

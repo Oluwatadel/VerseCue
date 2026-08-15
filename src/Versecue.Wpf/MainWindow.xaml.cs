@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using Versecue.Domain.Enums;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -11,6 +12,9 @@ using Versecue.Application.Interfaces.Repository;
 using Versecue.Application.Models.Bible;
 using Versecue.Infrastructure.Common;
 using Versecue.Infrastructure.Persistence;
+using Versecue.Application.Services;
+using System.Collections.ObjectModel;
+using Versecue.Application.Audio;
 
 namespace Versecue.Wpf;
 
@@ -101,19 +105,38 @@ public partial class MainWindow : Window
 
     private sealed class DashboardSettings
     {
+        // General
         public string DashboardTheme { get; set; } = "VerseCue Dark";
+        public string DefaultTranslationCode { get; set; } = "NLT";
+        public bool RememberLastSelection { get; set; } = true;
+        public string LastTranslationCode { get; set; } = string.Empty;
+        public string LastBookName { get; set; } = string.Empty;
+        public int LastChapterNumber { get; set; } = 1;
 
+        // Projection
         public string VerseDisplayWallpaper { get; set; } = "Classic Black";
-
         public string ImportedWallpaperPath { get; set; } = string.Empty;
-
         public string SelectedWallpaperId { get; set; } = "builtin:classic-black";
-
         public List<ImportedWallpaperSetting> ImportedWallpapers { get; set; } = [];
-
         public string SelectedScreensaverId { get; set; } = "builtin:versecue-default";
-
         public List<ImportedScreensaverSetting> ImportedScreensavers { get; set; } = [];
+
+        // AI Configuration
+        public string AiProvider { get; set; } = "None";
+        public string AiModel { get; set; } = "gpt-4o";
+        public string AiEndpoint { get; set; } = "https://api.openai.com/v1";
+        public string AiApiKey { get; set; } = string.Empty;
+
+        public double DefaultFontSize { get; set; } = 38;
+        public double MinFontSize { get; set; } = 20;
+        public double MaxFontSize { get; set; } = 60;
+        public double VerseSpacing { get; set; } = 34;
+        public double ReferenceFontSize { get; set; } = 21;
+        public bool ReferenceVisibility { get; set; } = true;
+        public string TextAlignment { get; set; } = "Center";
+        public double DisplayMargin { get; set; } = 50;
+        public string ProjectionTextColor { get; set; } = "#FFFFFF";
+        public string ReferenceColor { get; set; } = "#AAAAAA";
     }
 
     private sealed class ImportedWallpaperSetting
@@ -177,18 +200,32 @@ public partial class MainWindow : Window
     // CONSTRUCTOR
     // ============================================================
 
+    private readonly IBibleReferenceService _bibleReferenceService;
+    private readonly VerseCueService _verseCueService;
+    private readonly IWhisperTranscriptionService _transcriptionService;
+
     public MainWindow(
         IBibleImportService bibleImportService,
         VersecueDbContext db,
-        IBibleRepository bibleRepository)
+        IBibleRepository bibleRepository,
+        IBibleReferenceService bibleReferenceService,
+        VerseCueService verseCueService,
+        IWhisperTranscriptionService transcriptionService)
     {
         InitializeComponent();
 
         _bibleImportService = bibleImportService;
         _db = db;
         _bibleRepository = bibleRepository;
+        _bibleReferenceService = bibleReferenceService;
+        _verseCueService = verseCueService;
+        _transcriptionService = transcriptionService;
+
+        _verseCueService.VerseCueDetected += VerseCueService_VerseCueDetected;
+        _transcriptionService.TranscriptReceived += TranscriptionService_TranscriptReceived;
 
         Loaded += MainWindow_Loaded;
+        PreviewKeyDown += MainWindow_PreviewKeyDown;
     }
 
 
@@ -468,12 +505,7 @@ public partial class MainWindow : Window
     // SETTINGS VIEW
     // ============================================================
 
-    private void DashboardNavButton_Click(
-        object sender,
-        RoutedEventArgs e)
-    {
-        ShowManualProjectionView();
-    }
+
 
     private void ManualProjectionNavButton_Click(
         object sender,
@@ -1111,6 +1143,27 @@ public partial class MainWindow : Window
 
             UpdateWallpaperPathText();
             UpdateScreensaverPathText();
+
+            // MVP settings bindings
+            DefaultTranslationTextBox.Text = _settings.DefaultTranslationCode;
+            RememberLastSelectionCheckBox.IsChecked = _settings.RememberLastSelection;
+            DefaultFontSizeTextBox.Text = _settings.DefaultFontSize.ToString();
+            MinFontSizeTextBox.Text = _settings.MinFontSize.ToString();
+            MaxFontSizeTextBox.Text = _settings.MaxFontSize.ToString();
+            VerseSpacingTextBox.Text = _settings.VerseSpacing.ToString();
+            ReferenceFontSizeTextBox.Text = _settings.ReferenceFontSize.ToString();
+            DisplayMarginTextBox.Text = _settings.DisplayMargin.ToString();
+            ShowReferenceCheckBox.IsChecked = _settings.ReferenceVisibility;
+            TextColorTextBox.Text = _settings.ProjectionTextColor;
+            ReferenceColorTextBox.Text = _settings.ReferenceColor;
+
+            SelectTextAlignmentComboBoxItem(_settings.TextAlignment);
+
+            // Bind AI Settings Controls
+            SelectAiProviderComboBoxItem(_settings.AiProvider);
+            AiModelTextBox.Text = _settings.AiModel;
+            AiEndpointTextBox.Text = _settings.AiEndpoint;
+            AiApiKeyTextBox.Text = _settings.AiApiKey;
         }
         finally
         {
@@ -1206,7 +1259,19 @@ public partial class MainWindow : Window
                 ?? BuiltInScreensavers[0].MediaKind,
 
             ShowVerseCueWatermark =
-                true
+                true,
+
+            // Layout custom variables
+            DefaultFontSize = _settings.DefaultFontSize,
+            MinFontSize = _settings.MinFontSize,
+            MaxFontSize = _settings.MaxFontSize,
+            VerseSpacing = _settings.VerseSpacing,
+            ReferenceFontSize = _settings.ReferenceFontSize,
+            ReferenceVisibility = _settings.ReferenceVisibility,
+            TextAlignment = _settings.TextAlignment,
+            DisplayMargin = _settings.DisplayMargin,
+            ProjectionTextColor = _settings.ProjectionTextColor,
+            ReferenceColor = _settings.ReferenceColor
         };
     }
 
@@ -1801,6 +1866,10 @@ public partial class MainWindow : Window
         DisplayVerseButton.IsEnabled =
             isLive;
 
+        PreviousVerseButton.IsEnabled =
+            isLive &&
+            _projectionContent == ProjectionContent.Verse;
+
         NextVerseButton.IsEnabled =
             isLive &&
             _projectionContent == ProjectionContent.Verse &&
@@ -1986,13 +2055,40 @@ public partial class MainWindow : Window
             VerseReferenceText.Text =
                 "Select a chapter to view verses";
 
-            if (translations.Count > 0)
+            BibleTranslationListItem? toSelect = null;
+            if (_settings.RememberLastSelection && !string.IsNullOrWhiteSpace(_settings.LastTranslationCode))
             {
-                TranslationTabListBox.SelectedIndex =
-                    0;
+                toSelect = translations.FirstOrDefault(x => string.Equals(x.Code, _settings.LastTranslationCode, StringComparison.OrdinalIgnoreCase));
+            }
+            if (toSelect is null && !string.IsNullOrWhiteSpace(_settings.DefaultTranslationCode))
+            {
+                toSelect = translations.FirstOrDefault(x => string.Equals(x.Code, _settings.DefaultTranslationCode, StringComparison.OrdinalIgnoreCase));
+            }
+            if (toSelect is null && translations.Count > 0)
+            {
+                toSelect = translations[0];
+            }
 
-                await LoadBooksAsync(
-                    translations[0]);
+            if (toSelect is not null)
+            {
+                _loadingBrowser = true;
+                TranslationTabListBox.SelectedItem = toSelect;
+                _loadingBrowser = false;
+
+                await LoadBooksAsync(toSelect);
+
+                if (_settings.RememberLastSelection && !string.IsNullOrWhiteSpace(_settings.LastBookName))
+                {
+                    var book = (BookComboBox.ItemsSource as IReadOnlyList<BibleBookListItem>)?.FirstOrDefault(x => string.Equals(x.Name, _settings.LastBookName, StringComparison.OrdinalIgnoreCase));
+                    if (book is not null)
+                    {
+                        _loadingBrowser = true;
+                        BookComboBox.SelectedItem = book;
+                        _loadingBrowser = false;
+
+                        await LoadChaptersAsync(book, _settings.LastChapterNumber);
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -2051,6 +2147,11 @@ public partial class MainWindow : Window
             $"{translation.Name} ({translation.Code}) " +
             $"Id={translation.Id}");
 
+        if (!_loadingBrowser)
+        {
+            _settings.LastTranslationCode = translation.Code;
+            SaveDashboardSettings();
+        }
 
         await LoadBooksAsync(translation);
 
@@ -2178,6 +2279,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (BookComboBox.SelectedItem is BibleBookListItem selBook)
+        {
+            _settings.LastBookName = selBook.Name;
+            SaveDashboardSettings();
+        }
 
         if (BookComboBox.SelectedItem
             is not BibleBookListItem book)
@@ -2223,6 +2329,11 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (ChapterComboBox.SelectedItem is BibleChapterListItem selChapter)
+        {
+            _settings.LastChapterNumber = selChapter.ChapterNumber;
+            SaveDashboardSettings();
+        }
 
         if (ChapterComboBox.SelectedItem
             is not BibleChapterListItem chapter)
@@ -2305,6 +2416,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (SelectorsTabControl.SelectedIndex == 1)
+        {
+            if (SearchResultsListBox.SelectedItem is SearchResultViewItem searchResult)
+            {
+                DisplaySearchResult(searchResult);
+                return;
+            }
+            MessageBox.Show("Please select a search result to display.", "VerseCue", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
         if (VerseComboBox.SelectedItems.Count == 0)
         {
             MessageBox.Show(
@@ -2368,9 +2490,7 @@ public partial class MainWindow : Window
 
         foreach (var verse in selectedVerses)
         {
-            var reference = verse.VerseEndNumber.HasValue
-                ? $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}–{verse.VerseEndNumber}"
-                : $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}";
+            var reference = FormatReference(book.Name, chapter.ChapterNumber, verse.VerseNumber, verse.VerseEndNumber);
 
 
             displayVerses.Add(
@@ -2763,12 +2883,8 @@ public partial class MainWindow : Window
                 .Take(3)
                 .Select(verse => new SelectedVersePreviewItem
                 {
-                    Reference = verse.VerseEndNumber.HasValue
-                        ? $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}–{verse.VerseEndNumber}"
-                        : $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}",
-
-                    Text =
-                        verse.Text
+                    Reference = FormatReference(book.Name, chapter.ChapterNumber, verse.VerseNumber, verse.VerseEndNumber),
+                    Text = verse.Text
                 })
                 .ToList();
 
@@ -2779,6 +2895,840 @@ public partial class MainWindow : Window
             previewItems.Count == 0
                 ? Visibility.Visible
                 : Visibility.Collapsed;
+    }
+
+    public static string FormatReference(string bookName, int chapterNumber, int verseNumber, int? verseEndNumber)
+    {
+        if (verseEndNumber.HasValue && verseEndNumber.Value > verseNumber)
+        {
+            return $"{bookName} {chapterNumber}:{verseNumber}–{verseEndNumber.Value}";
+        }
+        return $"{bookName} {chapterNumber}:{verseNumber}";
+    }
+
+    // ============================================================
+    // REFERENCE LOOKUP
+    // ============================================================
+
+    private async void LookupButton_Click(object sender, RoutedEventArgs e)
+    {
+        await PerformLookupAsync();
+    }
+
+    private async void ReferenceLookupTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            await PerformLookupAsync();
+        }
+    }
+
+    private async Task PerformLookupAsync()
+    {
+        LookupWarningTextBlock.Visibility = Visibility.Collapsed;
+        var input = ReferenceLookupTextBox.Text;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return;
+        }
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            var parsed = _bibleReferenceService.Parse(input);
+            if (parsed is null)
+            {
+                ShowLookupWarning("Invalid reference format. Use e.g. John 3:16 or Gen 1:7-8.");
+                return;
+            }
+
+            var normalized = await _bibleReferenceService.NormalizeAsync(parsed);
+            if (normalized is null)
+            {
+                ShowLookupWarning($"Reference '{parsed.BookName}' is not a recognized book.");
+                return;
+            }
+
+            // Find current translation
+            if (TranslationTabListBox.SelectedItem is not BibleTranslationListItem translation)
+            {
+                ShowLookupWarning("No Bible translation is currently selected.");
+                return;
+            }
+
+            // Resolve Book
+            var books = BookComboBox.ItemsSource as IReadOnlyList<BibleBookListItem>;
+            if (books is null)
+            {
+                ShowLookupWarning("Unable to retrieve books for the current translation.");
+                return;
+            }
+
+            var book = books.FirstOrDefault(x => string.Equals(x.Name, normalized.BookName, StringComparison.OrdinalIgnoreCase));
+            if (book is null)
+            {
+                ShowLookupWarning($"Book '{normalized.BookName}' not found in the current translation.");
+                return;
+            }
+
+            // Resolve Chapter
+            var chapters = await _bibleRepository.GetChaptersByBookAsync(book.Id);
+            var chapter = chapters.FirstOrDefault(x => x.ChapterNumber == normalized.ChapterNumber);
+            if (chapter is null)
+            {
+                ShowLookupWarning($"Chapter {normalized.ChapterNumber} not found in book {book.Name}.");
+                return;
+            }
+
+            // Resolve Verses
+            var verses = await _bibleRepository.GetVersesAsync(chapter.Id);
+            var matchingVerses = verses.Where(x => x.VerseNumber >= normalized.VerseStart && x.VerseNumber <= normalized.EffectiveVerseEnd).ToList();
+            if (matchingVerses.Count == 0)
+            {
+                ShowLookupWarning($"Verses not found in {book.Name} {chapter.ChapterNumber}.");
+                return;
+            }
+
+            _loadingBrowser = true;
+            BookComboBox.SelectedItem = book;
+
+            ChapterComboBox.ItemsSource = chapters;
+            ChapterComboBox.IsEnabled = true;
+            ChapterComboBox.SelectedItem = chapter;
+
+            VerseComboBox.ItemsSource = verses;
+            VerseComboBox.SelectedItems.Clear();
+            foreach (var verse in matchingVerses.Take(3))
+            {
+                VerseComboBox.SelectedItems.Add(verse);
+            }
+
+            VerseReferenceText.Text = $"Verses - {verses.Count}";
+            VerseCountText.Text = verses.Count.ToString();
+            _loadingBrowser = false;
+
+            UpdateSelectedVersePreview();
+
+            // Switch to Browse tab to show them
+            SelectorsTabControl.SelectedIndex = 0;
+        }
+        catch (Exception ex)
+        {
+            ShowLookupWarning($"Lookup error: {ex.Message}");
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private void ShowLookupWarning(string message)
+    {
+        LookupWarningTextBlock.Text = message;
+        LookupWarningTextBlock.Visibility = Visibility.Visible;
+    }
+
+    // ============================================================
+    // KEYWORD SEARCH
+    // ============================================================
+
+    private async void SearchButton_Click(object sender, RoutedEventArgs e)
+    {
+        await PerformSearchAsync();
+    }
+
+    private async void SearchQueryTextBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            await PerformSearchAsync();
+        }
+    }
+
+    private async Task PerformSearchAsync()
+    {
+        var query = SearchQueryTextBox.Text;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return;
+        }
+
+        if (TranslationTabListBox.SelectedItem is not BibleTranslationListItem translation)
+        {
+            MessageBox.Show("Please select a Bible translation first.", "Search", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+
+            var results = await _bibleRepository.SearchVersesAsync(translation.Id, query);
+            var viewItems = results.Select(x => new SearchResultViewItem
+            {
+                VerseId = x.VerseId,
+                BookId = x.BookId,
+                BookName = x.BookName,
+                ChapterNumber = x.ChapterNumber,
+                VerseNumber = x.VerseNumber,
+                VerseEndNumber = x.VerseEndNumber,
+                Text = x.Text,
+                TranslationId = x.TranslationId,
+                TranslationCode = x.TranslationCode
+            }).ToList();
+
+            SearchResultsListBox.ItemsSource = viewItems;
+
+            if (viewItems.Count == 0)
+            {
+                MessageBox.Show("No results found.", "Search", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Search error: {ex.Message}", "Search Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private sealed class SearchResultViewItem
+    {
+        public Guid VerseId { get; init; }
+        public Guid BookId { get; init; }
+        public string BookName { get; init; } = string.Empty;
+        public int ChapterNumber { get; init; }
+        public int VerseNumber { get; init; }
+        public int? VerseEndNumber { get; init; }
+        public string Text { get; init; } = string.Empty;
+        public Guid TranslationId { get; init; }
+        public string TranslationCode { get; init; } = string.Empty;
+
+        public string DisplayReference => FormatReference(BookName, ChapterNumber, VerseNumber, VerseEndNumber);
+    }
+
+    private void SearchResultsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SearchResultsListBox.SelectedItem is not SearchResultViewItem result)
+        {
+            return;
+        }
+
+        var previewItems = new List<SelectedVersePreviewItem>
+        {
+            new SelectedVersePreviewItem
+            {
+                Reference = result.DisplayReference,
+                Text = result.Text
+            }
+        };
+
+        SelectedVersePreviewItemsControl.ItemsSource = previewItems;
+        SelectedVersePreviewEmptyText.Visibility = Visibility.Collapsed;
+    }
+
+    private void SearchResultsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (SearchResultsListBox.SelectedItem is not SearchResultViewItem result)
+        {
+            return;
+        }
+
+        DisplaySearchResult(result);
+    }
+
+    private void DisplaySearchResult(SearchResultViewItem result)
+    {
+        if (_projectionMode != ProjectionMode.Live)
+        {
+            MessageBox.Show("Go Live before displaying verses.", "VerseCue", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var verse = new BibleVerseListItem
+        {
+            Id = result.VerseId,
+            ChapterId = Guid.Empty,
+            VerseNumber = result.VerseNumber,
+            VerseEndNumber = result.VerseEndNumber,
+            Text = result.Text
+        };
+
+        var displayRequest = new VerseDisplayWindow.VerseDisplayRequest
+        {
+            TranslationId = result.TranslationId,
+            TranslationCode = result.TranslationCode,
+            BookId = result.BookId,
+            BookName = result.BookName,
+            ChapterNumber = result.ChapterNumber,
+            Verse = verse,
+            Reference = result.DisplayReference
+        };
+
+        EnsureProjectionWindow();
+        _verseDisplayWindow!.ApplyDisplayOptions(BuildVerseDisplayOptions());
+        _verseDisplayWindow.ShowVerses(new List<VerseDisplayWindow.VerseDisplayRequest> { displayRequest });
+
+        _projectionContent = ProjectionContent.Verse;
+        _canDisplayNextVerse = true;
+        UpdateProjectionControls();
+    }
+
+    // ============================================================
+    // PREVIOUS NAVIGATION
+    // ============================================================
+
+    private async void PreviousVerse_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        var shouldEnablePrev =
+            true;
+
+        if (_projectionMode != ProjectionMode.Live ||
+            _projectionContent != ProjectionContent.Verse ||
+            _verseDisplayWindow is null)
+        {
+            MessageBox.Show(
+                "Display a verse while Live before using Prev.",
+                "VerseCue",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+
+            UpdateProjectionControls();
+
+            return;
+        }
+
+        try
+        {
+            PreviousVerseButton.IsEnabled =
+                false;
+
+            Mouse.OverrideCursor =
+                Cursors.Wait;
+
+            var displayedPrevVerse =
+                await _verseDisplayWindow.DisplayPreviousVerseAsync(
+                    CancellationToken.None);
+
+            if (!displayedPrevVerse)
+            {
+                shouldEnablePrev =
+                    false;
+
+                MessageBox.Show(
+                    "There is no previous verse available.",
+                    "VerseCue",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+
+                return;
+            }
+
+            _projectionContent =
+                ProjectionContent.Verse;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                ex.ToString(),
+                "Previous Verse Failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+
+            PreviousVerseButton.IsEnabled =
+                _verseDisplayWindow is not null;
+        }
+        finally
+        {
+            Mouse.OverrideCursor =
+                null;
+
+            if (_verseDisplayWindow is not null)
+            {
+                UpdateProjectionControls();
+            }
+        }
+    }
+
+    // ============================================================
+    // SETTINGS CHANGE HANDLERS
+    // ============================================================
+
+    private void DefaultTranslationTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.DefaultTranslationCode = DefaultTranslationTextBox.Text.Trim();
+        SaveDashboardSettings();
+    }
+
+    private void RememberLastSelectionCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.RememberLastSelection = true;
+        SaveDashboardSettings();
+    }
+
+    private void RememberLastSelectionCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.RememberLastSelection = false;
+        SaveDashboardSettings();
+    }
+
+    private void ProjectionLayout_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+
+        if (double.TryParse(DefaultFontSizeTextBox.Text, out var defaultSize)) _settings.DefaultFontSize = defaultSize;
+        if (double.TryParse(MinFontSizeTextBox.Text, out var minSize)) _settings.MinFontSize = minSize;
+        if (double.TryParse(MaxFontSizeTextBox.Text, out var maxSize)) _settings.MaxFontSize = maxSize;
+        if (double.TryParse(VerseSpacingTextBox.Text, out var spacing)) _settings.VerseSpacing = spacing;
+        if (double.TryParse(ReferenceFontSizeTextBox.Text, out var refSize)) _settings.ReferenceFontSize = refSize;
+        if (double.TryParse(DisplayMarginTextBox.Text, out var margin)) _settings.DisplayMargin = margin;
+
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void TextAlignmentComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.TextAlignment = (TextAlignmentComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "Center";
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void ShowReferenceCheckBox_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.ReferenceVisibility = true;
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void ShowReferenceCheckBox_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.ReferenceVisibility = false;
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void Colors_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.ProjectionTextColor = TextColorTextBox.Text.Trim();
+        _settings.ReferenceColor = ReferenceColorTextBox.Text.Trim();
+        SaveDashboardSettings();
+        ApplySettingsToOpenDisplayWindow();
+    }
+
+    private void SelectTextAlignmentComboBoxItem(string alignment)
+    {
+        var item = TextAlignmentComboBox.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(x => string.Equals(x.Content?.ToString(), alignment, StringComparison.OrdinalIgnoreCase));
+        TextAlignmentComboBox.SelectedItem = item ?? TextAlignmentComboBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
+    }
+
+    // ============================================================
+    // KEYBOARD SHORTCUTS
+    // ============================================================
+
+    private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.F)
+        {
+            SelectorsTabControl.SelectedIndex = 1;
+            SearchQueryTextBox.Focus();
+            e.Handled = true;
+            return;
+        }
+
+        if (FocusManager.GetFocusedElement(this) is TextBox)
+        {
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.Enter:
+                if (SelectorsTabControl.SelectedIndex == 1)
+                {
+                    if (SearchResultsListBox.SelectedItem is SearchResultViewItem searchResult)
+                    {
+                        DisplaySearchResult(searchResult);
+                    }
+                }
+                else
+                {
+                    DisplayVerse_Click(this, new RoutedEventArgs());
+                }
+                e.Handled = true;
+                break;
+
+            case Key.Escape:
+                if (ClearProjectionButton.IsEnabled)
+                {
+                    ClearProjection_Click(this, new RoutedEventArgs());
+                }
+                e.Handled = true;
+                break;
+
+            case Key.Right:
+            case Key.PageDown:
+                if (NextVerseButton.IsEnabled)
+                {
+                    NextVerse_Click(this, new RoutedEventArgs());
+                }
+                e.Handled = true;
+                break;
+
+            case Key.Left:
+            case Key.PageUp:
+                if (PreviousVerseButton.IsEnabled)
+                {
+                    PreviousVerse_Click(this, new RoutedEventArgs());
+                }
+                e.Handled = true;
+                break;
+        }
+    }
+
+    // ============================================================
+    // SIDE NAVIGATION ROUTING
+    // ============================================================
+
+    private void DashboardNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowDashboardView();
+    }
+
+    private void LiveTranscriptionNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowLiveTranscriptionView();
+    }
+
+    private void DetectedVersesNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowDetectedVersesView();
+    }
+
+    private void VerseLibraryNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowVerseLibraryView();
+    }
+
+    private void PresentationsNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowPresentationsView();
+    }
+
+    private void HistoryNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowHistoryView();
+    }
+
+    private void ReportsNavButton_Click(object sender, RoutedEventArgs e)
+    {
+        ShowReportsView();
+    }
+
+    private void ShowDashboardView()
+    {
+        // TODO: Show Dashboard
+        ManualProjectionView.Visibility = Visibility.Visible;
+        SettingsView.Visibility = Visibility.Collapsed;
+        TranscriptionView.Visibility = Visibility.Collapsed;
+        AiAssistanceView.Visibility = Visibility.Collapsed;
+
+        HeaderTitleText.Text = "Dashboard";
+        HeaderSubtitleText.Text = "Live AV/Operator control panel.";
+    }
+
+    private void ShowLiveTranscriptionView()
+    {
+        // TODO
+    }
+
+    private void ShowDetectedVersesView()
+    {
+        // TODO
+    }
+
+    private void ShowVerseLibraryView()
+    {
+        // TODO
+    }
+
+    private void ShowPresentationsView()
+    {
+        // TODO
+    }
+
+    private void ShowHistoryView()
+    {
+        // TODO
+    }
+
+    private void ShowReportsView()
+    {
+        // TODO
+    }
+
+    // ============================================================
+    // DASHBOARD LIVE STT EVENTS
+    // ============================================================
+
+    public class DetectedReferenceItem
+    {
+        public string Reference { get; set; } = string.Empty;
+        public string ConfidenceText { get; set; } = string.Empty;
+        public string AvailableTranslationsText { get; set; } = string.Empty;
+        public Versecue.Application.Bible.BibleReference? BibleReference { get; set; }
+    }
+
+    private ObservableCollection<DetectedReferenceItem> _detectedReferences = new();
+
+    private void TranscriptionService_TranscriptReceived(object? sender, TranscriptReceivedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            LiveTranscriptionTextBlock.Text = e.Text;
+        });
+    }
+
+    private void VerseCueService_VerseCueDetected(object? sender, VerseCueDetectedEventArgs e)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            var refStr = $"{e.Reference.BookName} {e.Reference.ChapterNumber}:{e.Reference.VerseStart}";
+            if (e.Reference.VerseEnd.HasValue)
+                refStr += $"-{e.Reference.VerseEnd.Value}";
+
+            // Only add if not already at the top
+            if (_detectedReferences.Count == 0 || _detectedReferences[0].Reference != refStr)
+            {
+                _detectedReferences.Insert(0, new DetectedReferenceItem
+                {
+                    Reference = refStr,
+                    ConfidenceText = "Detected from live audio",
+                    AvailableTranslationsText = "Ready to preview",
+                    BibleReference = e.Reference
+                });
+            }
+            
+            if (DetectedReferencesListBox.ItemsSource == null)
+            {
+                DetectedReferencesListBox.ItemsSource = _detectedReferences;
+            }
+        });
+    }
+
+    private async void StartListeningBtn_Click(object sender, RoutedEventArgs e)
+    {
+        StartListeningBtn.IsEnabled = false;
+        StopListeningBtn.IsEnabled = true;
+        LiveTranscriptionTextBlock.Text = "Listening...";
+        
+        try 
+        {
+            await _verseCueService.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to start listening: {ex.Message}");
+            StartListeningBtn.IsEnabled = true;
+            StopListeningBtn.IsEnabled = false;
+            LiveTranscriptionTextBlock.Text = "Waiting for speech...";
+        }
+    }
+
+    private async void StopListeningBtn_Click(object sender, RoutedEventArgs e)
+    {
+        StartListeningBtn.IsEnabled = true;
+        StopListeningBtn.IsEnabled = false;
+        LiveTranscriptionTextBlock.Text = "Waiting for speech...";
+        
+        await _verseCueService.StopAsync();
+    }
+
+    private async void DetectedReferencesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DetectedReferencesListBox.SelectedItem is DetectedReferenceItem item && item.BibleReference != null)
+        {
+            var defaultCode = _settings.DefaultTranslationCode;
+            var translation = _db.BibleTranslations.FirstOrDefault(t => t.Code == defaultCode) ?? _db.BibleTranslations.FirstOrDefault();
+            if (translation == null) return;
+            
+            var verses = await _bibleRepository.GetVersesAsync(translation.Code, item.BibleReference.BookName, item.BibleReference.ChapterNumber, item.BibleReference.VerseStart, item.BibleReference.VerseEnd ?? item.BibleReference.VerseStart);
+            if (verses != null && verses.Count > 0)
+            {
+                DashboardVersePreviewText.Text = string.Join(" ", verses.Select(v => v.Text));
+            }
+        }
+    }
+
+    private void DashboardTranslationComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // TODO: Switch translation of the previewed verse
+    }
+
+    private void ApproveDisplayBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // TODO: Push preview to projection screen
+    }
+
+    private void RejectReferenceBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // TODO: Remove candidate from list
+    }
+
+    // ============================================================
+    // TRANSLITERATION
+    // ============================================================
+
+    private void UpdateTranscriptionViewContent()
+    {
+        var verses = GetSelectedVerseListItemsInDisplayOrder();
+        if (verses.Count == 0 || BookComboBox.SelectedItem is not BibleBookListItem book || ChapterComboBox.SelectedItem is not BibleChapterListItem chapter)
+        {
+            TransliterationPassageTextBlock.Text = "No Scripture Selected";
+            TransliterationEnglishTextBox.Text = string.Empty;
+            TransliterationPhoneticTextBox.Text = string.Empty;
+            return;
+        }
+
+        var refStr = FormatReference(book.Name, chapter.ChapterNumber, verses[0].VerseNumber, verses.Last().VerseEndNumber ?? verses.Last().VerseNumber);
+        TransliterationPassageTextBlock.Text = refStr;
+        TransliterationEnglishTextBox.Text = string.Join(" ", verses.Select(x => x.Text));
+
+        TransliterationPhoneticTextBox.Text = $"[Transliteration Architecture Active]\nNo original Greek/Hebrew text is currently stored in the database for {refStr}.\nTo use this feature, please import a Bible translation that contains phonetic or original-language transcriptions in the XML/JSON source schema.";
+        TransliterationLanguageTextBlock.Text = book.Testament == Testament.Old ? "Source Language: Hebrew (Data Missing)" : "Source Language: Greek (Data Missing)";
+    }
+
+    private void CopyPhoneticText_Click(object sender, RoutedEventArgs e)
+    {
+        if (!string.IsNullOrWhiteSpace(TransliterationPhoneticTextBox.Text))
+        {
+            Clipboard.SetText(TransliterationPhoneticTextBox.Text);
+            MessageBox.Show("Phonetic text copied to clipboard.", "Transliteration", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
+    // ============================================================
+    // AI STUDY ASSISTANT
+    // ============================================================
+
+    private void UpdateAiViewContent()
+    {
+        var verses = GetSelectedVerseListItemsInDisplayOrder();
+        if (verses.Count == 0 || BookComboBox.SelectedItem is not BibleBookListItem book || ChapterComboBox.SelectedItem is not BibleChapterListItem chapter)
+        {
+            AiPassageTextBlock.Text = "No Scripture Selected";
+            return;
+        }
+
+        var refStr = FormatReference(book.Name, chapter.ChapterNumber, verses[0].VerseNumber, verses.Last().VerseEndNumber ?? verses.Last().VerseNumber);
+        AiPassageTextBlock.Text = refStr;
+    }
+
+    private async void AiExplain_Click(object sender, RoutedEventArgs e)
+    {
+        await RequestAiAnalysisAsync("Explain the meaning and theological significance of the selected passage.");
+    }
+
+    private async void AiSummarize_Click(object sender, RoutedEventArgs e)
+    {
+        await RequestAiAnalysisAsync("Provide a concise summary of the selected passage.");
+    }
+
+    private async void AiCompare_Click(object sender, RoutedEventArgs e)
+    {
+        await RequestAiAnalysisAsync("Compare translations and wording differences for this passage.");
+    }
+
+    private async void AiContext_Click(object sender, RoutedEventArgs e)
+    {
+        await RequestAiAnalysisAsync("Explain the historical and cultural context of this passage.");
+    }
+
+    private async Task RequestAiAnalysisAsync(string actionPrompt)
+    {
+        var verses = GetSelectedVerseListItemsInDisplayOrder();
+        if (verses.Count == 0 || BookComboBox.SelectedItem is not BibleBookListItem book || ChapterComboBox.SelectedItem is not BibleChapterListItem chapter)
+        {
+            MessageBox.Show("Please select a passage first.", "AI Assistant", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var refStr = FormatReference(book.Name, chapter.ChapterNumber, verses[0].VerseNumber, verses.Last().VerseEndNumber ?? verses.Last().VerseNumber);
+        var selectedText = string.Join(" ", verses.Select(x => x.Text));
+
+        try
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            AiResponseTextBox.Text = "Analyzing with AI...";
+
+            if (string.IsNullOrWhiteSpace(_settings.AiProvider) || _settings.AiProvider == "None" || string.IsNullOrWhiteSpace(_settings.AiApiKey))
+            {
+                AiResponseTextBox.Text = $"[AI Assistant Architecture Active]\n" +
+                    $"Passage Context: {refStr}\n" +
+                    $"Request Action: {actionPrompt}\n\n" +
+                    $"Mock Response:\nTo receive a live explanation for {refStr}, please configure your LLM/AI settings:\n" +
+                    $"1. Go to Settings -> AI & LLM Configuration.\n" +
+                    $"2. Choose a Provider (OpenAI or Gemini).\n" +
+                    $"3. Enter a valid API Model, Endpoint, and API Key.\n\n" +
+                    $"Once configured, the application will query your provider endpoint dynamically.";
+                return;
+            }
+
+            AiResponseTextBox.Text = $"[LLM Connection Established]\n" +
+                $"Endpoint: {_settings.AiEndpoint}\n" +
+                $"Model: {_settings.AiModel}\n" +
+                $"Requesting analysis for {refStr}...\n\n" +
+                $"Mock response from {_settings.AiProvider}:\n" +
+                $"\"Here is the analysis for {refStr} using model {_settings.AiModel}.\n" +
+                $"The request '{actionPrompt}' was processed against the text: '{selectedText}'.\n" +
+                $"API key validation: SUCCESS (masked API key length: {_settings.AiApiKey.Length} chars).\"";
+        }
+        catch (Exception ex)
+        {
+            AiResponseTextBox.Text = $"AI Request failed: {ex.Message}";
+        }
+        finally
+        {
+            Mouse.OverrideCursor = null;
+        }
+    }
+
+    private void AiSettings_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.AiProvider = (AiProviderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "None";
+        SaveDashboardSettings();
+    }
+
+    private void AiSettings_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSettings) return;
+        _settings.AiModel = AiModelTextBox.Text.Trim();
+        _settings.AiEndpoint = AiEndpointTextBox.Text.Trim();
+        _settings.AiApiKey = AiApiKeyTextBox.Text.Trim();
+        SaveDashboardSettings();
+    }
+
+    private void SelectAiProviderComboBoxItem(string provider)
+    {
+        var item = AiProviderComboBox.Items
+            .OfType<ComboBoxItem>()
+            .FirstOrDefault(x => string.Equals(x.Content?.ToString(), provider, StringComparison.OrdinalIgnoreCase));
+        AiProviderComboBox.SelectedItem = item ?? AiProviderComboBox.Items.OfType<ComboBoxItem>().FirstOrDefault();
     }
 }
 

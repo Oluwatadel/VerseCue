@@ -39,6 +39,34 @@ public static class DependencyInjection
 
         services.AddScoped<IBibleRepository, DapperBibleRepository>();
 
+        // ---------------------------------------------------------
+        // Bible Reference and Detection Services
+        // ---------------------------------------------------------
+
+        services.AddScoped<IBibleReferenceService, Versecue.Infrastructure.Services.BibleReferenceService>();
+        services.AddScoped<IVerseDetectionService, Versecue.Infrastructure.Services.VerseDetectionService>();
+
+        // ---------------------------------------------------------
+        // Audio & STT Services
+        // ---------------------------------------------------------
+        
+        services.AddSingleton(new Versecue.Infrastructure.Audio.AudioOptions());
+        services.AddSingleton(new Versecue.Infrastructure.Stt.WhisperOptions());
+
+        services.AddSingleton<Versecue.Application.Interfaces.IAudioCaptureService, Versecue.Infrastructure.Audio.NAudioCaptureService>();
+        services.AddSingleton<Versecue.Infrastructure.Stt.WhisperEngine>();
+        services.AddSingleton<Versecue.Application.Interfaces.IWhisperTranscriptionService, Versecue.Infrastructure.Stt.WhisperTranscriptionService>();
+
+        // ---------------------------------------------------------
+        // AI Services
+        // ---------------------------------------------------------
+        services.AddSingleton<Versecue.Application.Interfaces.ILlmService, Versecue.Infrastructure.Llm.LlmService>();
+
+        // ---------------------------------------------------------
+        // VerseCue Orchestration
+        // ---------------------------------------------------------
+        services.AddSingleton<Versecue.Application.Services.VerseCueService>();
+
         return services;
     }
 }

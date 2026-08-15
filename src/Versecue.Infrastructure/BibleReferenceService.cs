@@ -3,8 +3,39 @@ using Versecue.Application.Interfaces;
 
 namespace Versecue.Infrastructure.Services;
 
+using System.Text.RegularExpressions;
+
 public sealed class BibleReferenceService : IBibleReferenceService
 {
+    private static readonly Regex ParseRegex = new(
+        @"^\s*(?<book>[1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)?)\s+(?<chapter>\d+)\s*:\s*(?<verseStart>\d+)(?:\s*[-\u2013\u2014]\s*(?<verseEnd>\d+))?\s*$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public BibleReference? Parse(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return null;
+
+        var match = ParseRegex.Match(input);
+        if (!match.Success)
+            return null;
+
+        var bookName = match.Groups["book"].Value.Trim();
+        if (!int.TryParse(match.Groups["chapter"].Value, out var chapter))
+            return null;
+
+        if (!int.TryParse(match.Groups["verseStart"].Value, out var verseStart))
+            return null;
+
+        int? verseEnd = null;
+        if (match.Groups["verseEnd"].Success && int.TryParse(match.Groups["verseEnd"].Value, out var parsedEnd))
+        {
+            verseEnd = parsedEnd;
+        }
+
+        return new BibleReference(bookName, chapter, verseStart, verseEnd);
+    }
+
     private static readonly Dictionary<string, string>
         BookAliases = new()
         {

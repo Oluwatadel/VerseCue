@@ -7,4 +7,6 @@ public interface IBibleReferenceService
     Task<BibleReference?> NormalizeAsync(
         BibleReference reference,
         CancellationToken cancellationToken = default);
+
+    BibleReference? Parse(string input);
 }

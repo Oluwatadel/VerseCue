@@ -63,6 +63,18 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="8,4"/>
         </Style>
+        <Style TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground" Value="#AAB6CC"/>
+            <Setter Property="Background" Value="#0F1F35"/>
+            <Setter Property="BorderBrush" Value="#263D5F"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
     </Window.Resources>
 
     <Grid x:Name="RootGrid">
@@ -163,51 +175,67 @@
                         Margin="0,0,0,8"
                         HorizontalContentAlignment="Left"
                         Click="DashboardNavButton_Click">
-
-                        <TextBlock
-                            Text="Dashboard"
-                            FontSize="15"/>
-
+                        <TextBlock Text="Dashboard" FontSize="15"/>
                     </Button>
-
-                    <TextBlock
-                        Text="Live Transcription"
-                        Foreground="{StaticResource TextMutedBrush}"
-                        Margin="14,12,0,0"/>
-
-                    <TextBlock
-                        Text="Detected Verses"
-                        Foreground="{StaticResource TextMutedBrush}"
-                        Margin="14,18,0,0"/>
-
-                    <TextBlock
-                        Text="Verse Library"
-                        Foreground="{StaticResource TextMutedBrush}"
-                        Margin="14,18,0,0"/>
 
                     <Button
-                        x:Name="ManualProjectionNavButton"
-                        Background="#7C3AED"
+                        x:Name="LiveTranscriptionNavButton"
                         Padding="14,12"
-                        Margin="0,18,0,0"
+                        Margin="0,0,0,8"
                         HorizontalContentAlignment="Left"
-                        Click="ManualProjectionNavButton_Click">
-
-                        <TextBlock
-                            Text="Manual Projection"
-                            FontSize="15"/>
-
+                        Click="LiveTranscriptionNavButton_Click">
+                        <TextBlock Text="Live Transcription" FontSize="15"/>
                     </Button>
 
-                    <TextBlock
-                        Text="Presentations"
-                        Foreground="{StaticResource TextMutedBrush}"
-                        Margin="14,18,0,0"/>
+                    <Button
+                        x:Name="DetectedVersesNavButton"
+                        Padding="14,12"
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="DetectedVersesNavButton_Click">
+                        <TextBlock Text="Detected Verses" FontSize="15"/>
+                    </Button>
+
+                    <Button
+                        x:Name="VerseLibraryNavButton"
+                        Padding="14,12"
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="VerseLibraryNavButton_Click">
+                        <TextBlock Text="Verse Library" FontSize="15"/>
+                    </Button>
+
+                    <Button
+                        x:Name="PresentationsNavButton"
+                        Padding="14,12"
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="PresentationsNavButton_Click">
+                        <TextBlock Text="Presentations" FontSize="15"/>
+                    </Button>
+
+                    <Button
+                        x:Name="HistoryNavButton"
+                        Padding="14,12"
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="HistoryNavButton_Click">
+                        <TextBlock Text="History" FontSize="15"/>
+                    </Button>
+
+                    <Button
+                        x:Name="ReportsNavButton"
+                        Padding="14,12"
+                        Margin="0,0,0,8"
+                        HorizontalContentAlignment="Left"
+                        Click="ReportsNavButton_Click">
+                        <TextBlock Text="Reports" FontSize="15"/>
+                    </Button>
 
                     <Button
                         x:Name="SettingsNavButton"
                         Content="Settings"
-                        Margin="0,18,0,0"
+                        Margin="0,0,0,8"
                         Padding="14,12"
                         HorizontalContentAlignment="Left"
                         Click="SettingsNavButton_Click"/>
@@ -436,102 +464,170 @@
 
                     </Border>
 
-                    <Border
-                        Grid.Row="4"
-                        Background="{StaticResource PanelBrush}"
-                        BorderBrush="{StaticResource BorderBrushSoft}"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Padding="14">
+                    <TabControl x:Name="SelectorsTabControl" Grid.Row="4" Background="Transparent" BorderThickness="0" Padding="0">
+                        <TabItem Header="Browse">
+                            <Border
+                                Background="{StaticResource PanelBrush}"
+                                BorderBrush="{StaticResource BorderBrushSoft}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
 
-                        <Grid>
+                                <Grid>
 
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="8"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
 
-                            <Grid
-                                Grid.Row="0">
+                                    <Grid
+                                        Grid.Row="0">
 
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                <TextBlock
-                                    x:Name="VerseReferenceText"
-                                    Text="3. Select Verse"
-                                    FontWeight="SemiBold"
-                                    FontSize="15"/>
+                                        <TextBlock
+                                            x:Name="VerseReferenceText"
+                                            Text="3. Select Verse"
+                                            FontWeight="SemiBold"
+                                            FontSize="15"/>
 
-                                <TextBlock
-                                    Grid.Column="1"
-                                    Text="Select up to 3"
-                                    Foreground="{StaticResource TextMutedBrush}"
-                                    FontSize="12"/>
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            Text="Select up to 3"
+                                            Foreground="{StaticResource TextMutedBrush}"
+                                            FontSize="12"/>
 
-                            </Grid>
+                                    </Grid>
 
-                            <ListView
-                                Grid.Row="2"
-                                x:Name="VerseComboBox"
-                                SelectionMode="Multiple"
-                                ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                SelectionChanged="VerseComboBox_SelectionChanged">
+                                    <ListView
+                                        Grid.Row="2"
+                                        x:Name="VerseComboBox"
+                                        SelectionMode="Multiple"
+                                        ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                        ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                        SelectionChanged="VerseComboBox_SelectionChanged">
 
-                                <ListView.ItemsPanel>
+                                        <ListView.ItemsPanel>
 
-                                    <ItemsPanelTemplate>
+                                            <ItemsPanelTemplate>
 
-                                        <WrapPanel/>
+                                                <WrapPanel/>
 
-                                    </ItemsPanelTemplate>
+                                            </ItemsPanelTemplate>
 
-                                </ListView.ItemsPanel>
+                                        </ListView.ItemsPanel>
 
-                                <ListView.ItemContainerStyle>
+                                        <ListView.ItemContainerStyle>
 
-                                    <Style TargetType="ListViewItem">
-                                        <Setter Property="Width" Value="58"/>
-                                        <Setter Property="Height" Value="42"/>
-                                        <Setter Property="Margin" Value="4"/>
-                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                        <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                                    </Style>
+                                            <Style TargetType="ListViewItem">
+                                                <Setter Property="Width" Value="58"/>
+                                                <Setter Property="Height" Value="42"/>
+                                                <Setter Property="Margin" Value="4"/>
+                                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                                            </Style>
 
-                                </ListView.ItemContainerStyle>
+                                        </ListView.ItemContainerStyle>
 
-                                <ListView.ItemTemplate>
+                                        <ListView.ItemTemplate>
 
-                                    <DataTemplate>
+                                            <DataTemplate>
 
-                                        <Border
-                                            Background="#0C1F39"
-                                            BorderBrush="#2A446D"
-                                            BorderThickness="1"
-                                            CornerRadius="4">
+                                                <Border
+                                                    Background="#0C1F39"
+                                                    BorderBrush="#2A446D"
+                                                    BorderThickness="1"
+                                                    CornerRadius="4">
 
-                                            <TextBlock
-                                                Text="{Binding VerseDisplay}"
-                                                FontSize="15"
-                                                FontWeight="SemiBold"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"/>
+                                                    <TextBlock
+                                                        Text="{Binding VerseDisplay}"
+                                                        FontSize="15"
+                                                        FontWeight="SemiBold"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"/>
 
-                                        </Border>
+                                                </Border>
 
-                                    </DataTemplate>
+                                            </DataTemplate>
 
-                                </ListView.ItemTemplate>
+                                        </ListView.ItemTemplate>
 
-                            </ListView>
+                                    </ListView>
 
-                        </Grid>
+                                </Grid>
 
-                    </Border>
+                            </Border>
+                        </TabItem>
+                        <TabItem Header="Search &amp; Lookup">
+                            <Border
+                                Background="{StaticResource PanelBrush}"
+                                BorderBrush="{StaticResource BorderBrushSoft}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="14">
+
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="6"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="14"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="8"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="12"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- 1. Lookup -->
+                                    <TextBlock Grid.Row="0" Text="Scripture Reference Lookup" FontWeight="SemiBold" FontSize="14"/>
+                                    <Grid Grid.Row="2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="ReferenceLookupTextBox" Height="30" FontSize="13" VerticalContentAlignment="Center" Margin="0,0,8,0" KeyDown="ReferenceLookupTextBox_KeyDown"/>
+                                        <Button Grid.Column="1" x:Name="LookupButton" Content="Lookup" Width="70" Height="30" Click="LookupButton_Click"/>
+                                    </Grid>
+                                    <TextBlock Grid.Row="4" x:Name="LookupWarningTextBlock" Text="" Foreground="#F87171" FontSize="11" TextWrapping="Wrap" Visibility="Collapsed"/>
+
+                                    <!-- 2. Search -->
+                                    <TextBlock Grid.Row="6" Text="Scripture Search" FontWeight="SemiBold" FontSize="14"/>
+                                    <Grid Grid.Row="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="SearchQueryTextBox" Height="30" FontSize="13" VerticalContentAlignment="Center" Margin="0,0,8,0" KeyDown="SearchQueryTextBox_KeyDown"/>
+                                        <Button Grid.Column="1" x:Name="SearchButton" Content="Search" Width="70" Height="30" Click="SearchButton_Click"/>
+                                    </Grid>
+
+                                    <!-- 3. Results -->
+                                    <ListBox Grid.Row="10" x:Name="SearchResultsListBox"
+                                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                             SelectionChanged="SearchResultsListBox_SelectionChanged"
+                                             MouseDoubleClick="SearchResultsListBox_MouseDoubleClick">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Margin="4,4">
+                                                    <TextBlock Text="{Binding DisplayReference}" FontWeight="Bold" Foreground="#C084FC" FontSize="13"/>
+                                                    <TextBlock Text="{Binding Text}" FontSize="12" Foreground="#F8FAFC" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                </Grid>
+
+                            </Border>
+                        </TabItem>
+                    </TabControl>
 
                 </Grid>
 
@@ -760,6 +856,15 @@
                                 BorderBrush="#22C55E"
                                 FontWeight="SemiBold"
                                 Click="LiveProjection_Click"/>
+
+                            <Button
+                                x:Name="PreviousVerseButton"
+                                Content="Prev"
+                                MinWidth="90"
+                                Height="46"
+                                Margin="0,0,10,10"
+                                IsEnabled="False"
+                                Click="PreviousVerse_Click"/>
 
                             <Button
                                 x:Name="NextVerseButton"
@@ -1112,6 +1217,523 @@
                         </Grid>
                     </Border>
 
+                    <!-- General Settings Section -->
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="General Settings"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Startup and defaults."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Default Translation Code:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="DefaultTranslationTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="DefaultTranslationTextBox_TextChanged"/>
+                                </Grid>
+
+                                <CheckBox x:Name="RememberLastSelectionCheckBox" Content="Remember last selection on startup" Checked="RememberLastSelectionCheckBox_Checked" Unchecked="RememberLastSelectionCheckBox_Unchecked" Foreground="White" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Projection Settings Section -->
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="Projection Layout"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Customize the sizing and alignment."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Default Font Size (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="DefaultFontSizeTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+                                
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Min Font Size (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="MinFontSizeTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Max Font Size (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="MaxFontSizeTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Verse Spacing (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="VerseSpacingTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Reference Font Size (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="ReferenceFontSizeTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Display Margin (px):" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="DisplayMarginTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="ProjectionLayout_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Text Alignment:" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" x:Name="TextAlignmentComboBox" Height="30" SelectionChanged="TextAlignmentComboBox_SelectionChanged">
+                                        <ComboBoxItem Content="Left"/>
+                                        <ComboBoxItem Content="Center"/>
+                                        <ComboBoxItem Content="Right"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <CheckBox x:Name="ShowReferenceCheckBox" Content="Show Scripture Reference" Checked="ShowReferenceCheckBox_Checked" Unchecked="ShowReferenceCheckBox_Unchecked" Foreground="White"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Colors Section -->
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="Projection Colors"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Choose text colors (Hex format)."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Scripture Text Color:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="TextColorTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="Colors_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Reference Text Color:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="ReferenceColorTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="Colors_TextChanged"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- AI/LLM Settings Section -->
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,14,0,0">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="AI &amp; LLM Configuration"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Configure study assistant provider."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="AI Provider:" VerticalAlignment="Center"/>
+                                    <ComboBox Grid.Column="1" x:Name="AiProviderComboBox" Height="30" SelectionChanged="AiSettings_Changed">
+                                        <ComboBoxItem Content="None"/>
+                                        <ComboBoxItem Content="OpenAI"/>
+                                        <ComboBoxItem Content="Gemini"/>
+                                    </ComboBox>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="AI Model:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="AiModelTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="AiSettings_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="API Endpoint URL:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="AiEndpointTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="AiSettings_TextChanged"/>
+                                </Grid>
+
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="API Key:" VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="1" x:Name="AiApiKeyTextBox" Height="30" VerticalContentAlignment="Center" TextChanged="AiSettings_TextChanged"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Dashboard View -->
+            <Grid
+                x:Name="DashboardView"
+                Grid.Row="1"
+                Margin="18,14"
+                Visibility="Collapsed">
+
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="3*"/>
+                    <ColumnDefinition Width="14"/>
+                    <ColumnDefinition Width="2*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- LEFT SIDE: Live Transcription & Controls -->
+                <Grid Grid.Column="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border
+                        Grid.Row="0"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Session Controls" FontWeight="SemiBold" FontSize="15"/>
+                                <TextBlock Text="Manage live listening session" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,4,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="StartListeningBtn" Content="Start Listening" Background="#16A34A" BorderBrush="#15803D" Click="StartListeningBtn_Click"/>
+                                <Button x:Name="StopListeningBtn" Content="Stop" Background="#DC2626" BorderBrush="#B91C1C" Margin="8,0,0,0" IsEnabled="False" Click="StopListeningBtn_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border
+                        Grid.Row="2"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Live Transcription" FontWeight="SemiBold" FontSize="15"/>
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                <TextBlock x:Name="LiveTranscriptionTextBlock" Text="Waiting for speech..." Foreground="#F8FAFC" TextWrapping="Wrap" LineHeight="20"/>
+                            </ScrollViewer>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- RIGHT SIDE: Detected References & Preview -->
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="3*"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="2*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Detected References -->
+                    <Border
+                        Grid.Row="0"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Detected References" FontWeight="SemiBold" FontSize="15"/>
+                            
+                            <ListBox x:Name="DetectedReferencesListBox" Grid.Row="2" SelectionChanged="DetectedReferencesListBox_SelectionChanged">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="4">
+                                            <TextBlock Text="{Binding Reference}" FontWeight="Bold" FontSize="16" Foreground="#C084FC"/>
+                                            <TextBlock Text="{Binding ConfidenceText}" FontSize="12" Foreground="{StaticResource TextMutedBrush}"/>
+                                            <TextBlock Text="{Binding AvailableTranslationsText}" FontSize="11" Foreground="#38BDF8" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </Grid>
+                    </Border>
+
+                    <!-- Verse Preview & Actions -->
+                    <Border
+                        Grid.Row="2"
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="14">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="8"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <Grid Grid.Row="0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Verse Preview" FontWeight="SemiBold" FontSize="15"/>
+                                <ComboBox x:Name="DashboardTranslationComboBox" Grid.Column="1" Width="100" SelectionChanged="DashboardTranslationComboBox_SelectionChanged"/>
+                            </Grid>
+
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                <TextBlock x:Name="DashboardVersePreviewText" Text="No reference selected." TextWrapping="Wrap" LineHeight="20"/>
+                            </ScrollViewer>
+
+                            <WrapPanel Grid.Row="3" Margin="0,12,0,0" HorizontalAlignment="Right">
+                                <Button x:Name="ApproveDisplayBtn" Content="Approve &amp; Display" Background="#2563EB" BorderBrush="#1D4ED8" Margin="0,0,8,0" Click="ApproveDisplayBtn_Click"/>
+                                <Button x:Name="RejectReferenceBtn" Content="Reject" Background="#475569" BorderBrush="#334155" Click="RejectReferenceBtn_Click"/>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+
+            <!-- Scripture Transliteration View -->
+            <ScrollViewer
+                x:Name="TranscriptionView"
+                Grid.Row="1"
+                Margin="18,14"
+                Visibility="Collapsed"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel>
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="Transcription / Transliteration"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Original language phonetics."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock x:Name="TransliterationPassageTextBlock" Text="No Scripture Selected" FontSize="16" FontWeight="Bold" Foreground="#C084FC" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="English Verse Text:" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TransliterationEnglishTextBox" Height="80" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Background="#0C1F39" Foreground="White" BorderBrush="#2A446D" Margin="0,0,0,16" Padding="6"/>
+
+                                <TextBlock Text="Transliteration Architecture Placeholder (Greek/Hebrew):" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TransliterationPhoneticTextBox" Height="80" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Background="#0F172A" Foreground="#38BDF8" BorderBrush="#2A446D" Margin="0,0,0,16" Padding="6"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="TransliterationLanguageTextBlock" Text="Language: Hebrew/Greek Source Data Missing" Foreground="{StaticResource TextMutedBrush}" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" Content="Copy Phonetic Text" Width="150" Height="32" Click="CopyPhoneticText_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- AI Study Assistant View -->
+            <ScrollViewer
+                x:Name="AiAssistanceView"
+                Grid.Row="1"
+                Margin="18,14"
+                Visibility="Collapsed"
+                VerticalScrollBarVisibility="Auto">
+
+                <StackPanel>
+                    <Border
+                        Background="{StaticResource PanelBrush}"
+                        BorderBrush="{StaticResource BorderBrushSoft}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="18"
+                        Margin="0,0,0,14">
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock
+                                    Text="AI Study Assistant"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"/>
+                                <TextBlock
+                                    Text="Ask and explain selected Scriptures."
+                                    Foreground="{StaticResource TextMutedBrush}"
+                                    Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock x:Name="AiPassageTextBlock" Text="No Scripture Selected" FontSize="16" FontWeight="Bold" Foreground="#C084FC" Margin="0,0,0,12"/>
+
+                                <TextBlock Text="Prompt / Inquiry:" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBox x:Name="AiQueryTextBox" Height="50" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12" VerticalContentAlignment="Top" Padding="4"/>
+
+                                <WrapPanel Orientation="Horizontal" Margin="0,0,0,16">
+                                    <Button Content="Explain" MinWidth="90" Height="32" Margin="0,0,8,8" Click="AiExplain_Click"/>
+                                    <Button Content="Summarize" MinWidth="90" Height="32" Margin="0,0,8,8" Click="AiSummarize_Click"/>
+                                    <Button Content="Compare Translations" MinWidth="130" Height="32" Margin="0,0,8,8" Click="AiCompare_Click"/>
+                                    <Button Content="Historical Context" MinWidth="120" Height="32" Margin="0,0,0,8" Click="AiContext_Click"/>
+                                </WrapPanel>
+
+                                <TextBlock Text="AI Analysis Response:" Foreground="{StaticResource TextMutedBrush}" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBox x:Name="AiResponseTextBox" Height="150" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" IsReadOnly="True" Background="#0C1F39" Foreground="#10B981" BorderBrush="#2A446D" Padding="6"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
 

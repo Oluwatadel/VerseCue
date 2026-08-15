@@ -14,10 +14,88 @@ namespace Versecue.Wpf;
 public partial class VerseDisplayWindow : Window
 {
     private readonly IBibleRepository _bibleRepository;
-    private VerseNavigationCursor? _navigationCursor;
+    private VerseNavigationCursor? _nextNavigationCursor;
+    private VerseNavigationCursor? _prevNavigationCursor;
     private readonly DispatcherTimer _gifTimer;
     private List<BitmapFrame> _gifFrames = [];
     private int _gifFrameIndex;
+
+    private double _defaultFontSize = 38.0;
+    private double _minFontSize = 20.0;
+    private double _maxFontSize = 60.0;
+
+    // Dependency Properties for DataTemplate Bindings
+    public static readonly DependencyProperty ProjectorFontSizeProperty =
+        DependencyProperty.Register(nameof(ProjectorFontSize), typeof(double), typeof(VerseDisplayWindow), new PropertyMetadata(38.0));
+
+    public double ProjectorFontSize
+    {
+        get => (double)GetValue(ProjectorFontSizeProperty);
+        set => SetValue(ProjectorFontSizeProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorReferenceFontSizeProperty =
+        DependencyProperty.Register(nameof(ProjectorReferenceFontSize), typeof(double), typeof(VerseDisplayWindow), new PropertyMetadata(21.0));
+
+    public double ProjectorReferenceFontSize
+    {
+        get => (double)GetValue(ProjectorReferenceFontSizeProperty);
+        set => SetValue(ProjectorReferenceFontSizeProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorSpacingProperty =
+        DependencyProperty.Register(nameof(ProjectorSpacing), typeof(Thickness), typeof(VerseDisplayWindow), new PropertyMetadata(new Thickness(0, 0, 0, 34)));
+
+    public Thickness ProjectorSpacing
+    {
+        get => (Thickness)GetValue(ProjectorSpacingProperty);
+        set => SetValue(ProjectorSpacingProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorTextColorProperty =
+        DependencyProperty.Register(nameof(ProjectorTextColor), typeof(Brush), typeof(VerseDisplayWindow), new PropertyMetadata(Brushes.White));
+
+    public Brush ProjectorTextColor
+    {
+        get => (Brush)GetValue(ProjectorTextColorProperty);
+        set => SetValue(ProjectorTextColorProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorReferenceColorProperty =
+        DependencyProperty.Register(nameof(ProjectorReferenceColor), typeof(Brush), typeof(VerseDisplayWindow), new PropertyMetadata(new SolidColorBrush(Color.FromRgb(170, 170, 170))));
+
+    public Brush ProjectorReferenceColor
+    {
+        get => (Brush)GetValue(ProjectorReferenceColorProperty);
+        set => SetValue(ProjectorReferenceColorProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorTextAlignmentProperty =
+        DependencyProperty.Register(nameof(ProjectorTextAlignment), typeof(TextAlignment), typeof(VerseDisplayWindow), new PropertyMetadata(TextAlignment.Center));
+
+    public TextAlignment ProjectorTextAlignment
+    {
+        get => (TextAlignment)GetValue(ProjectorTextAlignmentProperty);
+        set => SetValue(ProjectorTextAlignmentProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorDisplayMarginProperty =
+        DependencyProperty.Register(nameof(ProjectorDisplayMargin), typeof(Thickness), typeof(VerseDisplayWindow), new PropertyMetadata(new Thickness(50)));
+
+    public Thickness ProjectorDisplayMargin
+    {
+        get => (Thickness)GetValue(ProjectorDisplayMarginProperty);
+        set => SetValue(ProjectorDisplayMarginProperty, value);
+    }
+
+    public static readonly DependencyProperty ProjectorReferenceVisibilityProperty =
+        DependencyProperty.Register(nameof(ProjectorReferenceVisibility), typeof(Visibility), typeof(VerseDisplayWindow), new PropertyMetadata(Visibility.Visible));
+
+    public Visibility ProjectorReferenceVisibility
+    {
+        get => (Visibility)GetValue(ProjectorReferenceVisibilityProperty);
+        set => SetValue(ProjectorReferenceVisibilityProperty, value);
+    }
 
     public VerseDisplayWindow(
         IBibleRepository bibleRepository)
@@ -25,6 +103,7 @@ public partial class VerseDisplayWindow : Window
         InitializeComponent();
 
         _bibleRepository = bibleRepository;
+        SizeChanged += (s, e) => RecalculateFontSize();
 
         _gifTimer =
             new DispatcherTimer
@@ -57,6 +136,18 @@ public partial class VerseDisplayWindow : Window
         public string ScreensaverMediaKind { get; init; } = "default";
 
         public bool ShowVerseCueWatermark { get; init; } = true;
+
+        // Custom Layout Settings
+        public double DefaultFontSize { get; init; } = 38;
+        public double MinFontSize { get; init; } = 20;
+        public double MaxFontSize { get; init; } = 60;
+        public double VerseSpacing { get; init; } = 34;
+        public double ReferenceFontSize { get; init; } = 21;
+        public bool ReferenceVisibility { get; init; } = true;
+        public string TextAlignment { get; init; } = "Center";
+        public double DisplayMargin { get; init; } = 50;
+        public string ProjectionTextColor { get; init; } = "#FFFFFF";
+        public string ReferenceColor { get; init; } = "#AAAAAA";
     }
 
     public sealed class VerseDisplayRequest
@@ -118,32 +209,34 @@ public partial class VerseDisplayWindow : Window
                 .Take(3)
                 .Last();
 
-        _navigationCursor =
+        var firstDisplayedVerse = verses.Take(3).First();
+
+        _prevNavigationCursor =
             new VerseNavigationCursor
             {
-                TranslationId =
-                    lastDisplayedVerse.TranslationId,
+                TranslationId = firstDisplayedVerse.TranslationId,
+                TranslationCode = firstDisplayedVerse.TranslationCode,
+                BookId = firstDisplayedVerse.BookId,
+                BookName = firstDisplayedVerse.BookName,
+                ChapterNumber = firstDisplayedVerse.ChapterNumber,
+                VerseNumber = firstDisplayedVerse.Verse.VerseNumber,
+                VerseId = firstDisplayedVerse.Verse.Id
+            };
 
-                TranslationCode =
-                    lastDisplayedVerse.TranslationCode,
-
-                BookId =
-                    lastDisplayedVerse.BookId,
-
-                BookName =
-                    lastDisplayedVerse.BookName,
-
-                ChapterNumber =
-                    lastDisplayedVerse.ChapterNumber,
-
-                VerseNumber =
-                    lastDisplayedVerse.Verse.VerseNumber,
-
-                VerseId =
-                    lastDisplayedVerse.Verse.Id
+        _nextNavigationCursor =
+            new VerseNavigationCursor
+            {
+                TranslationId = lastDisplayedVerse.TranslationId,
+                TranslationCode = lastDisplayedVerse.TranslationCode,
+                BookId = lastDisplayedVerse.BookId,
+                BookName = lastDisplayedVerse.BookName,
+                ChapterNumber = lastDisplayedVerse.ChapterNumber,
+                VerseNumber = lastDisplayedVerse.Verse.VerseNumber,
+                VerseId = lastDisplayedVerse.Verse.Id
             };
 
         VerseItemsControl.ItemsSource = displayItems;
+        RecalculateFontSize();
 
         if (!IsVisible)
         {
@@ -169,6 +262,41 @@ public partial class VerseDisplayWindow : Window
                 ? Brushes.Transparent
                 : new SolidColorBrush(
                     Color.FromArgb(122, 0, 0, 0));
+
+        // Apply formatting settings
+        _defaultFontSize = options.DefaultFontSize;
+        _minFontSize = options.MinFontSize;
+        _maxFontSize = options.MaxFontSize;
+
+        ProjectorReferenceFontSize = options.ReferenceFontSize;
+        ProjectorSpacing = new Thickness(0, 0, 0, options.VerseSpacing);
+        ProjectorDisplayMargin = new Thickness(options.DisplayMargin);
+        ProjectorReferenceVisibility = options.ReferenceVisibility ? Visibility.Visible : Visibility.Collapsed;
+
+        if (Enum.TryParse<TextAlignment>(options.TextAlignment, out var align))
+        {
+            ProjectorTextAlignment = align;
+        }
+
+        try
+        {
+            var brushConverter = new BrushConverter();
+            if (brushConverter.ConvertFromString(options.ProjectionTextColor) is Brush textBrush)
+            {
+                ProjectorTextColor = textBrush;
+            }
+            if (brushConverter.ConvertFromString(options.ReferenceColor) is Brush refBrush)
+            {
+                ProjectorReferenceColor = refBrush;
+            }
+        }
+        catch
+        {
+            ProjectorTextColor = Brushes.White;
+            ProjectorReferenceColor = new SolidColorBrush(Color.FromRgb(170, 170, 170));
+        }
+
+        RecalculateFontSize();
     }
 
     public void ShowScreensaver(
@@ -177,8 +305,8 @@ public partial class VerseDisplayWindow : Window
         VerseItemsControl.ItemsSource =
             null;
 
-        _navigationCursor =
-            null;
+        _prevNavigationCursor = null;
+        _nextNavigationCursor = null;
 
         VerseCueWatermark.Visibility =
             options.ShowVerseCueWatermark
@@ -216,15 +344,15 @@ public partial class VerseDisplayWindow : Window
     public async Task<bool> DisplayNextVerseAsync(
         CancellationToken cancellationToken = default)
     {
-        if (_navigationCursor is null)
+        if (_nextNavigationCursor is null)
         {
             return false;
         }
 
         var nextVerse =
             await _bibleRepository.GetNextVerseAsync(
-                _navigationCursor.TranslationId,
-                _navigationCursor.VerseId,
+                _nextNavigationCursor.TranslationId,
+                _nextNavigationCursor.VerseId,
                 cancellationToken);
 
         if (nextVerse is null)
@@ -261,6 +389,90 @@ public partial class VerseDisplayWindow : Window
             ]);
 
         return true;
+    }
+
+    public async Task<bool> DisplayPreviousVerseAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (_prevNavigationCursor is null)
+        {
+            return false;
+        }
+
+        var prevVerse =
+            await _bibleRepository.GetPreviousVerseAsync(
+                _prevNavigationCursor.TranslationId,
+                _prevNavigationCursor.VerseId,
+                cancellationToken);
+
+        if (prevVerse is null)
+        {
+            return false;
+        }
+
+        ShowVerses(
+            [
+                new VerseDisplayRequest
+                {
+                    TranslationId =
+                        prevVerse.TranslationId,
+
+                    TranslationCode =
+                        prevVerse.TranslationCode,
+
+                    BookId =
+                        prevVerse.BookId,
+
+                    BookName =
+                        prevVerse.BookName,
+
+                    ChapterNumber =
+                        prevVerse.ChapterNumber,
+
+                    Verse =
+                        prevVerse.Verse,
+
+                    Reference = prevVerse.Verse.VerseEndNumber.HasValue
+                        ? $"{prevVerse.BookName} {prevVerse.ChapterNumber}:{prevVerse.Verse.VerseNumber}–{prevVerse.Verse.VerseEndNumber}"
+                        : $"{prevVerse.BookName} {prevVerse.ChapterNumber}:{prevVerse.Verse.VerseNumber}"
+                }
+            ]);
+
+        return true;
+    }
+
+    private void RecalculateFontSize()
+    {
+        if (VerseItemsControl.ItemsSource is not List<VerseDisplayItem> items || items.Count == 0)
+        {
+            return;
+        }
+
+        double width = ActualWidth;
+        double height = ActualHeight;
+
+        if (width <= 0) width = Width;
+        if (height <= 0) height = Height;
+
+        double targetSize = _defaultFontSize;
+        int totalLength = items.Sum(x => x.Verse.Text.Length);
+        int count = items.Count;
+
+        // Scale by window height relative to 700px
+        double heightFactor = Math.Min(1.0, height / 700.0);
+        targetSize *= heightFactor;
+
+        // Scale by number of verses
+        if (count == 2) targetSize *= 0.85;
+        else if (count >= 3) targetSize *= 0.70;
+
+        // Scale by total text character length
+        if (totalLength > 400) targetSize *= 0.65;
+        else if (totalLength > 200) targetSize *= 0.8;
+
+        // Clamp
+        targetSize = Math.Max(_minFontSize, Math.Min(_maxFontSize, targetSize));
+        ProjectorFontSize = targetSize;
     }
 
     private static System.Windows.Media.Brush BuildWallpaperBrush(

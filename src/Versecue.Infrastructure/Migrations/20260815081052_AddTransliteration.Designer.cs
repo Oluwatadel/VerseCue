@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Versecue.Infrastructure.Persistence;
 
@@ -10,9 +11,11 @@ using Versecue.Infrastructure.Persistence;
 namespace Versecue.Infrastructure.Migrations
 {
     [DbContext(typeof(VersecueDbContext))]
-    partial class VersecueDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815081052_AddTransliteration")]
+    partial class AddTransliteration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.8");

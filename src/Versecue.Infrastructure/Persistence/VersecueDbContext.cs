@@ -116,6 +116,8 @@ public sealed class VersecueDbContext : DbContext
             entity.Property(x => x.Text)
                 .IsRequired();
 
+            entity.Property(x => x.Transliteration);
+
             entity.HasIndex(x => new
             {
                 x.ChapterId,
