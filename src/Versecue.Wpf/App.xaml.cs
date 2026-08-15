@@ -1,9 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.IO;
 using System.Windows;
 using Versecue.Infrastructure;
+using Versecue.Infrastructure.Persistence;
 
 namespace Versecue.Wpf;
 
@@ -90,6 +92,18 @@ public partial class App : System.Windows.Application
 
             _serviceScope =
                 _serviceProvider.CreateScope();
+
+            // =========================================================
+            // APPLY DATABASE MIGRATIONS
+            // =========================================================
+
+            var db =
+                _serviceScope
+                    .ServiceProvider
+                    .GetRequiredService<VersecueDbContext>();
+
+
+            db.Database.Migrate();
 
             // ---------------------------------------------------------
             // Resolve MainWindow

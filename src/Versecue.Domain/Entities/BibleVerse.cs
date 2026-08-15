@@ -10,6 +10,7 @@ public class BibleVerse
     public Guid Id { get; private set; }
     public Guid ChapterId { get; private set; }
     public int VerseNumber { get; private set; }
+    public int? VerseEndNumber { get; private set; }
     public string Text { get; private set; }
 
     // Navigation
@@ -17,21 +18,24 @@ public class BibleVerse
 
     private BibleVerse() { } // EF Core
 
-    public BibleVerse(Guid chapterId, int verseNumber, string text)
+    public BibleVerse(Guid chapterId, int verseNumber, int? verseEndNumber, string text)
     {
         if (verseNumber <= 0) 
             throw new BibleVerseArgumentException($"VerseNumber must be positive, {nameof(verseNumber)}");
+        if (verseEndNumber.HasValue && verseEndNumber.Value <= verseNumber)
+            throw new BibleVerseArgumentException($"VerseEndNumber must be greater than VerseNumber, {nameof(verseEndNumber)}");
         if (string.IsNullOrWhiteSpace(text)) 
             throw new BibleVerseArgumentException($"Text required, {nameof(text)}");
 
         Id = Guid.NewGuid();
         ChapterId = chapterId;
         VerseNumber = verseNumber;
+        VerseEndNumber = verseEndNumber;
         Text = text.Trim();
     }
 
-    public BibleVerse(int verseNumber, string text, BibleChapter chapter)
-        : this(chapter.Id, verseNumber, text)
+    public BibleVerse(int verseNumber, int? verseEndNumber, string text, BibleChapter chapter)
+        : this(chapter.Id, verseNumber, verseEndNumber, text)
     {
         Chapter = chapter;
     }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using System.IO;
 using System.Text.Json;
@@ -2284,8 +2284,9 @@ public partial class MainWindow : Window
 
         foreach (var verse in selectedVerses)
         {
-            var reference =
-                $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}";
+            var reference = verse.VerseEndNumber.HasValue
+                ? $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}–{verse.VerseEndNumber}"
+                : $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}";
 
 
             displayVerses.Add(
@@ -2678,8 +2679,9 @@ public partial class MainWindow : Window
                 .Take(3)
                 .Select(verse => new SelectedVersePreviewItem
                 {
-                    Reference =
-                        $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}",
+                    Reference = verse.VerseEndNumber.HasValue
+                        ? $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}–{verse.VerseEndNumber}"
+                        : $"{book.Name} {chapter.ChapterNumber}:{verse.VerseNumber}",
 
                     Text =
                         verse.Text

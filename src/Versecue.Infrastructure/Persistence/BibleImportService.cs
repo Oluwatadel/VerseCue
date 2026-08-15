@@ -97,6 +97,7 @@ public sealed class BibleImportService : IBibleImportService
 
                         var verse = new BibleVerse(
                             verseDocument.Number,
+                            verseDocument.EndNumber,
                             verseDocument.Text,
                             chapter);
 
@@ -295,6 +296,7 @@ public sealed class BibleImportService : IBibleImportService
                             $"Chapter number is required for book '{bookName}'.")
                     };
 
+                    var parsedVerses = new List<VerseImportDocument>();
                     foreach (var verseElement in chapterElement
                                  .Elements()
                                  .Where(x => x.Name.LocalName.Equals(
@@ -303,17 +305,31 @@ public sealed class BibleImportService : IBibleImportService
                     {
                         cancellationToken.ThrowIfCancellationRequested();
 
-                        chapter.Verses.Add(
-                            new VerseImportDocument
+                        var verseNum = GetRequiredIntAttribute(
+                            verseElement,
+                            "number",
+                            $"Verse number is required for book '{bookName}', chapter {chapter.Number}.");
+                        
+                        var text = NormalizeVerseText(verseElement.Value);
+
+                        if (string.IsNullOrWhiteSpace(text) &&
+                            parsedVerses.Count > 0 &&
+                            !string.IsNullOrWhiteSpace(parsedVerses[^1].Text) &&
+                            !parsedVerses[^1].EndNumber.HasValue)
+                        {
+                            parsedVerses[^1].EndNumber = verseNum;
+                        }
+                        else
+                        {
+                            parsedVerses.Add(new VerseImportDocument
                             {
-                                Number = GetRequiredIntAttribute(
-                                    verseElement,
-                                    "number",
-                                    $"Verse number is required for book '{bookName}', chapter {chapter.Number}."),
-                                Text = NormalizeVerseText(
-                                    verseElement.Value)
+                                Number = verseNum,
+                                Text = text
                             });
+                        }
                     }
+
+                    chapter.Verses = parsedVerses;
 
                     book.Chapters.Add(chapter);
                 }
@@ -514,8 +530,10 @@ public sealed class BibleImportService : IBibleImportService
 
                     if (string.IsNullOrWhiteSpace(verse.Text))
                     {
-                        throw new InvalidOperationException(
-                            $"Book '{book.Name}', chapter {chapter.Number}, " +
+                        Debug.WriteLine($"Book '{book.Name}', chapter {chapter.Number}, " +
+                            $"verse {verse.Number} contains no text.");
+
+                        throw new InvalidOperationException($"Book '{book.Name}', chapter {chapter.Number}, " +
                             $"verse {verse.Number} contains no text.");
                     }
                 }
@@ -570,6 +588,8 @@ public sealed class BibleImportService : IBibleImportService
     private sealed class VerseImportDocument
     {
         public int Number { get; set; }
+
+        public int? EndNumber { get; set; }
 
         public string Text { get; set; } = string.Empty;
     }

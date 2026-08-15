@@ -254,10 +254,9 @@ public partial class VerseDisplayWindow : Window
                     Verse =
                         nextVerse.Verse,
 
-                    Reference =
-                        $"{nextVerse.BookName} " +
-                        $"{nextVerse.ChapterNumber}:" +
-                        $"{nextVerse.Verse.VerseNumber}"
+                    Reference = nextVerse.Verse.VerseEndNumber.HasValue
+                        ? $"{nextVerse.BookName} {nextVerse.ChapterNumber}:{nextVerse.Verse.VerseNumber}–{nextVerse.Verse.VerseEndNumber}"
+                        : $"{nextVerse.BookName} {nextVerse.ChapterNumber}:{nextVerse.Verse.VerseNumber}"
                 }
             ]);
 

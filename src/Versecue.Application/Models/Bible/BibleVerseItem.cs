@@ -1,4 +1,4 @@
-﻿namespace Versecue.Application.Models.Bible;
+namespace Versecue.Application.Models.Bible;
 
 public sealed class BibleVerseListItem
 {
@@ -7,6 +7,8 @@ public sealed class BibleVerseListItem
     public Guid ChapterId { get; init; }
 
     public int VerseNumber { get; init; }
+
+    public int? VerseEndNumber { get; init; }
 
     public string Text { get; init; } = string.Empty;
 }

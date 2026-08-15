@@ -111,6 +111,8 @@ public sealed class VersecueDbContext : DbContext
             entity.Property(x => x.VerseNumber)
                 .IsRequired();
 
+            entity.Property(x => x.VerseEndNumber);
+
             entity.Property(x => x.Text)
                 .IsRequired();
 

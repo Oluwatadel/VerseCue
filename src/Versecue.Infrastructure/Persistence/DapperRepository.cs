@@ -1,4 +1,4 @@
-﻿using Dapper;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Versecue.Application.Interfaces;
@@ -235,6 +235,7 @@ public sealed class DapperBibleRepository : IBibleRepository
             Id,
             ChapterId,
             VerseNumber,
+            VerseEndNumber,
             Text
         FROM BibleVerses
         WHERE UPPER(ChapterId) = UPPER(@ChapterId)
@@ -269,6 +270,7 @@ public sealed class DapperBibleRepository : IBibleRepository
             Id = Guid.Parse(x.Id),
             ChapterId = Guid.Parse(x.ChapterId),
             VerseNumber = x.VerseNumber,
+            VerseEndNumber = x.VerseEndNumber,
             Text = x.Text
         }).ToList();
     }
@@ -325,6 +327,7 @@ public sealed class DapperBibleRepository : IBibleRepository
                 v.Id,
                 v.ChapterId,
                 v.VerseNumber,
+                v.VerseEndNumber,
                 v.Text
             FROM BibleVerses v
 
@@ -389,6 +392,9 @@ public sealed class DapperBibleRepository : IBibleRepository
                 VerseNumber =
                     row.VerseNumber,
 
+                VerseEndNumber =
+                    row.VerseEndNumber,
+
                 Text =
                     row.Text
             })
@@ -442,6 +448,7 @@ public sealed class DapperBibleRepository : IBibleRepository
                 c.ChapterNumber,
                 v.Id AS VerseId,
                 v.VerseNumber,
+                v.VerseEndNumber,
                 v.Text
             FROM BibleVerses v
 
@@ -562,6 +569,9 @@ public sealed class DapperBibleRepository : IBibleRepository
                     VerseNumber =
                         row.VerseNumber,
 
+                    VerseEndNumber =
+                        row.VerseEndNumber,
+
                     Text =
                         row.Text
                 }
@@ -630,6 +640,8 @@ public sealed class DapperBibleRepository : IBibleRepository
 
         public int VerseNumber { get; set; }
 
+        public int? VerseEndNumber { get; set; }
+
         public string Text { get; set; } = string.Empty;
     }
 
@@ -640,6 +652,8 @@ public sealed class DapperBibleRepository : IBibleRepository
         public string ChapterId { get; set; } = string.Empty;
 
         public int VerseNumber { get; set; }
+
+        public int? VerseEndNumber { get; set; }
 
         public string Text { get; set; } = string.Empty;
     }
@@ -663,6 +677,8 @@ public sealed class DapperBibleRepository : IBibleRepository
         public string VerseId { get; set; } = string.Empty;
 
         public int VerseNumber { get; set; }
+
+        public int? VerseEndNumber { get; set; }
 
         public string Text { get; set; } = string.Empty;
     }
